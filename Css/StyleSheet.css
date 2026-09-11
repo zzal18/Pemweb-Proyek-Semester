@@ -1,0 +1,264 @@
+:root {
+    --primary-color: #6f4e37;
+    --primary-dark: #4e3426;
+    --secondary-color: #f5eee6;
+    --accent-color: #c89b6d;
+
+    --text-color: #333333;
+    --light-text: #666666;
+    --white: #ffffff;
+    --border-color: #dddddd;
+
+    --container-width: 1100px;
+    --section-padding: 70px;
+
+    --radius: 12px;
+    --shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    line-height: 1.6;
+    color: var(--text-color);
+    background-color: var(--white);
+}
+
+header {
+    background-color: var(--white);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding: 15px 5%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: var(--container-width);
+    margin: 0 auto;
+}
+
+header h1 {
+    color: var(--primary-color);
+    font-size: 1.5rem;
+}
+
+nav {
+    display: flex;
+    gap: 25px;
+    flex-wrap: wrap;
+}
+
+nav a {
+    color: var(--text-color);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+nav a:hover {
+    color: var(--primary-color);
+}
+
+section {
+    padding: var(--section-padding) 5%;
+    max-width: var(--container-width);
+    margin: 0 auto;
+}
+
+section h2 {
+    color: var(--primary-dark);
+    font-size: 2rem;
+    margin-bottom: 15px;
+}
+
+#beranda {
+    background-color: var(--secondary-color);
+    max-width: 100%;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    align-items: center;
+    gap: 40px;
+    padding-left: calc((100% - var(--container-width)) / 2 + 5%);
+    padding-right: calc((100% - var(--container-width)) / 2 + 5%);
+}
+
+#beranda h2 {
+    font-size: clamp(2rem, 4vw, 3rem);
+}
+
+#beranda p {
+    color: var(--light-text);
+    font-size: 1.1rem;
+}
+
+#beranda img {
+    width: 100%;
+    max-width: 250px;
+    height: auto;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    justify-self: center;
+}
+
+#menu {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+}
+
+#menu h2 {
+    grid-column: 1 / -1;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+article {
+    background-color: var(--white);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+article:hover {
+    transform: translateY(-5px);
+}
+
+article h3 {
+    color: var(--primary-color);
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+}
+
+article img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+article p {
+    color: var(--light-text);
+}
+
+#tentang {
+    background-color: var(--secondary-color);
+    max-width: 100%;
+    padding-left: calc((100% - var(--container-width)) / 2 + 5%);
+    padding-right: calc((100% - var(--container-width)) / 2 + 5%);
+}
+
+#tentang p {
+    color: var(--light-text);
+    margin-bottom: 15px;
+    max-width: 800px;
+}
+
+#kontak {
+    max-width: 700px;
+}
+
+form {
+    background-color: var(--white);
+    padding: 30px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+form label {
+    font-weight: bold;
+}
+
+form input,
+form textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font: inherit;
+}
+
+form textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+button[type="submit"] {
+    background-color: var(--primary-color);
+    color: var(--white);
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    align-self: flex-start;
+}
+
+button[type="submit"]:hover {
+    background-color: var(--primary-dark);
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+    outline: 3px solid var(--accent-color);
+    outline-offset: 3px;
+}
+
+footer {
+    background-color: var(--primary-dark);
+    color: var(--white);
+    text-align: center;
+    padding: 25px 0;
+}
+
+@media (max-width: 800px) {
+    header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+
+    #beranda {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+
+    #menu {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 500px) {
+    nav {
+        gap: 12px;
+        justify-content: center;
+    }
+
+    button[type="submit"] {
+        width: 100%;
+    }
+}
