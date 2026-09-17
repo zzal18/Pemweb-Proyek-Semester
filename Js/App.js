@@ -1,0 +1,61 @@
+// js/app.js
+// Entry script A2 Coffee and Food. Dimuat sebagai ES Module dari index.html.
+
+import { ringkasMenu, cariMenuById, filterByKategori, formatRupiah } from './utils.js';
+
+// 1. Array of objects: data menu A2 Coffee and Food
+const daftarMenu = [
+    { id: 1, nama: 'A2 Coffee',    kategori: 'Minuman', harga: 12000, stok: 25, status: 'Tersedia' },
+    { id: 2, nama: 'Cireng A2',    kategori: 'Cemilan', harga: 8000,  stok: 15, status: 'Tersedia' },
+    { id: 3, nama: 'Es Teh Manis', kategori: 'Minuman', harga: 5000,  stok: 0,  status: 'Habis' },
+    { id: 4, nama: 'Roti Bakar',   kategori: 'Cemilan', harga: 10000, stok: 10, status: 'Tersedia' }
+];
+
+// 2. filter -> hanya menu yang masih tersedia
+const menuTersedia = daftarMenu.filter(item => item.status === 'Tersedia');
+
+// 3. map -> hanya ambil nama menu
+const namaMenu = daftarMenu.map(item => item.nama);
+
+// 4. reduce -> total stok khusus kategori Minuman
+const totalStokMinuman = daftarMenu
+    .filter(item => item.kategori === 'Minuman')
+    .reduce((total, item) => total + item.stok, 0);
+
+// 5. Fungsi kecil buatan sendiri (bukan dari utils.js) untuk membuat label ringkas per menu
+function buatLabelMenu({ nama, harga, stok }) {
+    const hargaFormatted = formatRupiah(harga);
+    return `${nama} - ${hargaFormatted} (stok: ${stok})`;
+}
+
+// 6. Error handling: bungkus semua pemanggilan yang berpotensi gagal
+try {
+    console.log('--- Menu Tersedia ---');
+    console.table(menuTersedia);
+
+    console.log('--- Semua Nama Menu ---');
+    console.log(namaMenu);
+
+    console.log('--- Total Stok Minuman ---');
+    console.log(totalStokMinuman);
+
+    console.log('--- Ringkasan Menu (dari utils.js) ---');
+    console.log(ringkasMenu(daftarMenu));
+
+    console.log('--- Menu Kategori Cemilan (dari utils.js) ---');
+    console.log(filterByKategori(daftarMenu, 'Cemilan'));
+
+    console.log('--- Label Menu ---');
+    daftarMenu.forEach(item => console.log(buatLabelMenu(item)));
+
+    console.log('--- Cari Menu id=2 (dari utils.js) ---');
+    console.log(cariMenuById(daftarMenu, 2));
+
+    // Sengaja memanggil id yang tidak ada untuk menguji error handling
+    console.log('--- Uji Error Handling: cari id=99 ---');
+    console.log(cariMenuById(daftarMenu, 99));
+
+} catch (error) {
+    // Pesan ramah untuk pengguna, tanpa membocorkan detail teknis sensitif
+    console.error('Terjadi masalah saat memproses data menu:', error.message);
+}
