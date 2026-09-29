@@ -3,12 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A2 Coffe and Food</title>
+    <title>A2 Coffee and Food</title>
 
     <link rel="Stylesheet" href="Css/StyleSheet.css">
-
     <script type="module" src="Js/App.js"></script>
-    <script type="module" src="Js/utils.js"></script>
 
 </head>
 
@@ -21,6 +19,7 @@
         <a href="#menu">Menu</a>
         <a href="#tentang">Tentang Kami</a>
         <a href="#kontak">Kontak</a>
+        <button id="theme-button" type="button" aria-pressed="false">Ganti Tema</button>
     </nav>
 
 </header>
@@ -36,8 +35,7 @@
         waktu santai Anda.
     </p>
 
-    <img src="Images/A2 Coffe.jpg" width="150"
-         alt="Logo A2 Coffee and Food">
+    <img src="Images/A2 Coffe.jpg" alt="Logo A2 Coffee and Food">
 
 </section>
 
@@ -45,29 +43,15 @@
 
     <h2>Menu Kami</h2>
 
-    <article>
-        <h3>A2 Coffe</h3>
+    <nav id="filter-menu" aria-label="Filter kategori menu">
+        <button type="button" class="filter-btn active" data-filter="Semua" aria-pressed="true">Semua</button>
+        <button type="button" class="filter-btn" data-filter="Minuman" aria-pressed="false">Minuman</button>
+        <button type="button" class="filter-btn" data-filter="Cemilan" aria-pressed="false">Cemilan</button>
+    </nav>
 
-        <img src="Images/A2.png" width="150"
-             alt="Segelas kopi susu A2">
+    <input type="search" id="cari-menu" placeholder="Cari nama menu..." aria-label="Cari menu">
 
-        <p>
-            Kopi susu dengan perpaduan kopi dan susu
-            yang cocok dinikmati kapan saja.
-        </p>
-    </article>
-
-    <article>
-        <h3>Cireng A2</h3>
-
-        <img src="Images/Cireng A2.jpg" width="150"
-             alt="Cireng A2">
-
-        <p>
-            Cireng A2 salah satu menu cemilan yang
-            lumayan diminati oleh pembeli.
-        </p>
-    </article>
+    <p id="info-hasil" role="status" aria-live="polite"></p>
 
 </section>
 
@@ -110,6 +94,8 @@
         <textarea id="pesan" name="pesan" required></textarea>
 
         <button type="submit">Kirim Pesan</button>
+
+        <p id="status-form" role="status" aria-live="polite"></p>
 
     </form>
 
