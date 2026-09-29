@@ -262,3 +262,109 @@ footer {
         width: 100%;
     }
 }
+
+/* ===== MODUL 5: filter, pencarian, kartu dinamis, tema gelap ===== */
+#filter-menu {
+    grid-column: 1 / -1;
+    justify-content: center;
+}
+
+.filter-btn,
+.btn-detail,
+#theme-button {
+    background-color: var(--white);
+    color: var(--primary-color);
+    border: 2px solid var(--primary-color);
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.filter-btn:hover,
+.filter-btn.active,
+.btn-detail:hover,
+#theme-button:hover {
+    background-color: var(--primary-color);
+    color: var(--white);
+}
+
+#cari-menu {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: 100%;
+    max-width: 400px;
+    padding: 10px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font: inherit;
+    background-color: var(--white);
+    color: var(--text-color);
+}
+
+#info-hasil {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: var(--light-text);
+}
+
+.btn-detail {
+    margin-top: 12px;
+}
+
+.detail {
+    width: 100%;
+    margin-top: 10px;
+    padding: 10px;
+    background-color: var(--secondary-color);
+    border-radius: 8px;
+}
+
+.badge {
+    display: inline-block;
+    padding: 2px 12px;
+    margin-bottom: 8px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: bold;
+}
+
+.badge-ok {
+    background-color: #d8f0dc;
+    color: #1e6b32;
+}
+
+.badge-habis {
+    background-color: #f8d9d9;
+    color: #9b2222;
+}
+
+#status-form {
+    font-weight: bold;
+}
+
+.status-ok {
+    color: #1e6b32;
+}
+
+.status-error {
+    color: #b00020;
+}
+
+form input,
+form textarea {
+    background-color: var(--white);
+    color: var(--text-color);
+}
+
+/* Tema gelap: cukup menimpa variabel di :root */
+:root[data-theme="dark"] {
+    --white: #1e1a17;
+    --secondary-color: #2a2420;
+    --text-color: #f1e9e0;
+    --light-text: #b9aea3;
+    --border-color: #3d342e;
+    --primary-color: #c89b6d;
+    --primary-dark: #e0b98f;
+}
