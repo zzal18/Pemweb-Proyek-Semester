@@ -39,7 +39,6 @@ export function cariMenuById(data, id) {
 
     return menu;
 }
-
 /**
  * Mengambil semua menu pada satu kategori tertentu (mis. "Minuman"/"Cemilan").
  * @param {Array<Object>} data
@@ -65,4 +64,40 @@ export function formatRupiah(angka) {
     }
 
     return `Rp${angka.toLocaleString('id-ID')}`;
+}
+/**
+ * Mencari menu berdasarkan potongan nama (tidak peka huruf besar/kecil).
+ * @param {Array<Object>} data
+ * @param {string} kataKunci
+ * @returns {Array<Object>}
+ */
+export function cariMenuByNama(data, kataKunci) {
+    if (!Array.isArray(data)) {
+        throw new TypeError('Data menu harus berupa array');
+    }
+
+    const kunci = String(kataKunci).trim().toLowerCase();
+    return data.filter(item => item.nama.toLowerCase().includes(kunci));
+}
+
+/**
+ * Menyimpan preferensi NON-SENSITIF ke localStorage.
+ */
+export function simpanPreferensi(kunci, nilai) {
+    try {
+        localStorage.setItem(kunci, nilai);
+    } catch (error) {
+        console.warn('Preferensi tidak dapat disimpan:', error.message);
+    }
+}
+
+/**
+ * Mengambil preferensi dari localStorage, atau nilai bawaan jika tidak ada.
+ */
+export function ambilPreferensi(kunci, bawaan) {
+    try {
+        return localStorage.getItem(kunci) ?? bawaan;
+    } catch (error) {
+        return bawaan;
+    }
 }
