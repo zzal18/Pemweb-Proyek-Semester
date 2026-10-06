@@ -5,17 +5,13 @@ import {
 
 const daftarMenu = [
     { id: 1, nama: 'A2 Coffee',    kategori: 'Minuman', harga: 12000, stok: 25, status: 'Tersedia',
-      deskripsi: 'Kopi susu dengan perpaduan kopi dan susu yang cocok dinikmati kapan saja.',
-      gambar: 'Images/A2.png' },
+    deskripsi: 'Kopi susu dengan perpaduan kopi dan susu yang cocok dinikmati kapan saja.', gambar: 'Images/A2.png' },
     { id: 2, nama: 'Cireng A2',    kategori: 'Cemilan', harga: 8000,  stok: 15, status: 'Tersedia',
-      deskripsi: 'Cemilan yang lumayan diminati oleh pembeli.',
-      gambar: 'Images/Cireng A2.jpg' },
+    deskripsi: 'Cemilan yang lumayan diminati oleh pembeli.', gambar: 'Images/Cireng A2.jpg' },
     { id: 3, nama: 'Es Teh Manis', kategori: 'Minuman', harga: 5000,  stok: 0,  status: 'Habis',
-      deskripsi: 'Teh manis dingin yang menyegarkan.',
-      gambar: '' },
+    deskripsi: 'Teh manis dingin yang menyegarkan.', gambar: '' },
     { id: 4, nama: 'Roti Bakar',   kategori: 'Cemilan', harga: 10000, stok: 10, status: 'Tersedia',
-      deskripsi: 'Roti bakar hangat dengan topping pilihan.',
-      gambar: '' }
+    deskripsi: 'Roti bakar hangat dengan topping pilihan.', gambar: '' }
 ];
 
 const menuTersedia = daftarMenu.filter(item => item.status === 'Tersedia');
@@ -31,7 +27,7 @@ function buatLabelMenu({ nama, harga, stok }) {
     return `${nama} - ${hargaFormatted} (stok: ${stok})`;
 }
 
-// ===================== DOM & RENDER =====================
+// DOM & RENDER 
 const menu = document.querySelector('#menu');
 const infoHasil = document.querySelector('#info-hasil');
 
@@ -73,7 +69,6 @@ function buatCard(item) {
 }
 
 function renderMenu(items) {
-    // Hapus hanya kartu lama; judul, filter, dan input pencarian tetap ada
     menu.querySelectorAll('article').forEach(card => card.remove());
 
     for (const item of items) {
@@ -85,7 +80,7 @@ function renderMenu(items) {
         : `Menampilkan ${items.length} dari ${daftarMenu.length} menu.`;
 }
 
-// ===================== STATE, FILTER & PENCARIAN =====================
+// STATE, FILTER & PENCARIAN
 const tombolFilter = document.querySelectorAll('[data-filter]');
 const inputCari = document.querySelector('#cari-menu');
 
@@ -126,8 +121,7 @@ inputCari.addEventListener('input', () => {
     terapkanFilter();
 });
 
-// ===================== EVENT DELEGATION: DETAIL =====================
-// Satu listener di #menu; berlaku juga untuk kartu yang dibuat ulang saat render.
+// EVENT DELEGATION: DETAIL 
 menu.addEventListener('click', (event) => {
     const tombol = event.target.closest('[data-aksi="detail"]');
     if (!tombol) return;
@@ -150,7 +144,7 @@ menu.addEventListener('click', (event) => {
     tombol.setAttribute('aria-expanded', String(sedangTertutup));
 });
 
-// ===================== TEMA (WEB STORAGE) =====================
+// TEMA (WEB STORAGE)
 const tombolTema = document.querySelector('#theme-button');
 
 function terapkanTema(tema) {
@@ -165,35 +159,152 @@ tombolTema.addEventListener('click', () => {
     simpanPreferensi('a2-theme', temaBaru);
 });
 
-// ===================== FORM KONTAK =====================
-const formKontak = document.querySelector('#kontak form');
+//FORM KONTAK
+// FORM KONTAK (MODUL 6)
+const formKontak = document.querySelector('#form-kontak');
 const statusForm = document.querySelector('#status-form');
+const previewKontak = document.querySelector('#preview-kontak');
+const previewKontakList = document.querySelector('#preview-kontak-list');
+const hintPesan = document.querySelector('#hint-pesan');
+
+const JENIS_PESAN = {
+    saran: 'Saran',
+    pertanyaan: 'Pertanyaan',
+    pemesanan: 'Pemesanan',
+    keluhan: 'Keluhan'
+};
+const BATAS_PESAN = 500;
 
 function tampilkanStatus(pesan, sukses) {
-    statusForm.textContent = pesan;               // textContent = aman dari XSS
+    statusForm.textContent = pesan;
     statusForm.className = sukses ? 'status-ok' : 'status-error';
+}
+
+// Mengembalikan object errors; kosong jika semua data valid
+function validateForm(data) {
+    const errors = {};
+
+    const nama = String(data.get('nama') ?? '').trim();
+    const email = String(data.get('email') ?? '').trim();
+    const telepon = String(data.get('telepon') ?? '').trim().replace(/[\s-]/g, '');
+    const jenis = String(data.get('jenis') ?? '');
+    const pesan = String(data.get('pesan') ?? '').trim();
+
+    // Nama: kosong, terlalu pendek, terlalu panjang, karakter tidak valid
+    if (nama === '') {
+        errors.nama = 'Nama wajib diisi.';
+    } else if (nama.length < 3) {
+        errors.nama = 'Nama minimal 3 karakter.';
+    } else if (nama.length > 60) {
+        errors.nama = 'Nama maksimal 60 karakter.';
+    } else if (!/^[\p{L}\s.'-]+$/u.test(nama)) {
+        errors.nama = "Nama hanya boleh berisi huruf, spasi, titik, apostrof, dan tanda hubung.";
+    }
+
+    // Email: kosong vs format tidak valid
+    if (email === '') {
+        errors.email = 'Email wajib diisi.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+        errors.email = 'Format email tidak valid. Contoh: nama@contoh.com.';
+    }
+
+    // Telepon: opsional, tapi jika diisi harus berformat nomor Indonesia
+    if (telepon !== '' && !/^(\+62|62|0)8\d{8,11}$/.test(telepon)) {
+        errors.telepon = 'Nomor tidak valid. Gunakan format 08xxxxxxxxxx atau +628xxxxxxxxxx (10-13 digit).';
+    }
+
+    // Jenis pesan: wajib dan harus dari pilihan yang tersedia
+    if (jenis === '') {
+        errors.jenis = 'Pilih jenis pesan.';
+    } else if (!Object.hasOwn(JENIS_PESAN, jenis)) {
+        errors.jenis = 'Jenis pesan tidak tersedia. Pilih dari daftar.';
+    }
+
+    // Pesan: kosong, terlalu pendek, terlalu panjang
+    if (pesan === '') {
+        errors.pesan = 'Pesan wajib diisi.';
+    } else if (pesan.length < 10) {
+        errors.pesan = `Pesan minimal 10 karakter (baru ${pesan.length}).`;
+    } else if (pesan.length > BATAS_PESAN) {
+        errors.pesan = `Pesan maksimal ${BATAS_PESAN} karakter (sekarang ${pesan.length}).`;
+    }
+
+    return errors;
+}
+
+function bersihkanError() {
+    formKontak.querySelectorAll('.error').forEach(el => (el.textContent = ''));
+    formKontak.querySelectorAll('[aria-invalid="true"]')
+        .forEach(el => el.removeAttribute('aria-invalid'));
+}
+
+function perbaruiHitungan() {
+    const panjang = formKontak.elements.pesan.value.length;
+    hintPesan.textContent = `${panjang}/${BATAS_PESAN} karakter`;
+}
+
+// Preview memakai textContent (bukan innerHTML) sebagai sanitasi awal
+function tampilkanPreview(data) {
+    const baris = [
+        ['Nama', String(data.get('nama')).trim()],
+        ['Email', String(data.get('email')).trim()],
+        ['No. WhatsApp', String(data.get('telepon')).trim() || '-'],
+        ['Jenis pesan', JENIS_PESAN[data.get('jenis')]],
+        ['Pesan', String(data.get('pesan')).trim()]
+    ];
+
+    previewKontakList.replaceChildren();
+    for (const [label, isi] of baris) {
+        const dt = document.createElement('dt');
+        const dd = document.createElement('dd');
+        dt.textContent = label;
+        dd.textContent = isi;
+        previewKontakList.append(dt, dd);
+    }
+    previewKontak.hidden = false;
 }
 
 formKontak.addEventListener('submit', (event) => {
     event.preventDefault();
 
-    const nama = formKontak.elements.nama.value.trim();
-    const pesan = formKontak.elements.pesan.value.trim();
+    const data = new FormData(formKontak);
+    const errors = validateForm(data);
 
-    if (nama.length < 3) {
-        tampilkanStatus('Nama minimal 3 karakter.', false);
+    bersihkanError();
+    previewKontak.hidden = true;
+
+    if (Object.keys(errors).length > 0) {
+        for (const [field, pesanError] of Object.entries(errors)) {
+            document.querySelector(`#error-${field}`).textContent = pesanError;
+            formKontak.elements[field]?.setAttribute('aria-invalid', 'true');
+        }
+        // Fokus ke field error pertama (urutan sesuai urutan di form)
+        const urutan = ['nama', 'email', 'telepon', 'jenis', 'pesan'];
+        const pertama = urutan.find(field => field in errors);
+        formKontak.elements[pertama]?.focus();
+
+        const jumlah = Object.keys(errors).length;
+        tampilkanStatus(`Terdapat ${jumlah} isian yang perlu diperbaiki.`, false);
         return;
     }
-    if (pesan.length < 10) {
-        tampilkanStatus('Pesan minimal 10 karakter.', false);
-        return;
-    }
 
-    tampilkanStatus(`Terima kasih, ${nama}! Pesan Anda sudah kami terima.`, true);
+    const nama = String(data.get('nama')).trim();
+    tampilkanStatus(`Terima kasih, ${nama}! Data valid. Pesan belum dikirim ke server (simulasi).`, true);
+    tampilkanPreview(data);
     formKontak.reset();
+    perbaruiHitungan();
 });
 
-// ===================== INISIALISASI =====================
+// Hapus error sebuah field begitu pengguna mulai memperbaikinya
+formKontak.addEventListener('input', (event) => {
+    const field = event.target;
+    const errorEl = document.querySelector(`#error-${field.name}`);
+    if (errorEl) errorEl.textContent = '';
+    field.removeAttribute('aria-invalid');
+
+    if (field.name === 'pesan') perbaruiHitungan();
+});
+//INISIALISASI
 const temaTersimpan = ambilPreferensi('a2-theme', 'light');
 terapkanTema(temaTersimpan === 'dark' ? 'dark' : 'light');
 
@@ -204,7 +315,6 @@ tandaiFilterAktif(state.kategori);
 
 terapkanFilter();
 
-// ===================== LOG PENGUJIAN (Modul 4) =====================
 try {
     console.log('--- Menu Tersedia ---');
     console.table(menuTersedia);

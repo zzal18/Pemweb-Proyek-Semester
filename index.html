@@ -82,22 +82,51 @@
         A2 Coffee and Food melalui formulir berikut.
     </p>
 
-    <form action="#" method="post">
+    <form id="form-kontak" action="#" method="post" novalidate>
 
-        <label for="nama">Nama</label>
-        <input type="text" id="nama" name="nama" required>
+    <label for="nama">Nama <span aria-hidden="true">*</span></label>
+    <input type="text" id="nama" name="nama" required minlength="3" maxlength="60"
+        autocomplete="name" aria-describedby="error-nama">
+    <small class="error" id="error-nama"></small>
 
-        <label for="email">Email</label>
-        <input type="email" id="email" name="email" required>
+    <label for="email">Email <span aria-hidden="true">*</span></label>
+    <input type="email" id="email" name="email" required
+        autocomplete="email" aria-describedby="error-email">
+    <small class="error" id="error-email"></small>
 
-        <label for="pesan">Pesan</label>
-        <textarea id="pesan" name="pesan" required></textarea>
+    <label for="telepon">No. WhatsApp (opsional)</label>
+    <input type="tel" id="telepon" name="telepon" inputmode="tel"
+        pattern="(\+62|62|0)8[0-9]{8,11}" autocomplete="tel"
+        aria-describedby="hint-telepon error-telepon">
+    <small class="hint" id="hint-telepon">Contoh: 081234567890</small>
+    <small class="error" id="error-telepon"></small>
 
-        <button type="submit">Kirim Pesan</button>
+    <label for="jenis">Jenis pesan <span aria-hidden="true">*</span></label>
+    <select id="jenis" name="jenis" required aria-describedby="error-jenis">
+        <option value="">-- Pilih jenis pesan --</option>
+        <option value="saran">Saran</option>
+        <option value="pertanyaan">Pertanyaan</option>
+        <option value="pemesanan">Pemesanan</option>
+        <option value="keluhan">Keluhan</option>
+    </select>
+    <small class="error" id="error-jenis"></small>
 
-        <p id="status-form" role="status" aria-live="polite"></p>
+    <label for="pesan">Pesan <span aria-hidden="true">*</span></label>
+    <textarea id="pesan" name="pesan" required minlength="10" maxlength="500"
+        aria-describedby="hint-pesan error-pesan"></textarea>
+    <small class="hint" id="hint-pesan">0/500 karakter</small>
+    <small class="error" id="error-pesan"></small>
 
-    </form>
+    <button type="submit">Kirim Pesan</button>
+
+    <p id="status-form" role="status" aria-live="polite"></p>
+
+    <section id="preview-kontak" hidden aria-labelledby="judul-preview-kontak">
+        <h3 id="judul-preview-kontak">Ringkasan Pesan</h3>
+        <dl id="preview-kontak-list"></dl>
+    </section>
+
+</form>
 
 </section>
 

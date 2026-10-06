@@ -368,3 +368,77 @@ form textarea {
     --primary-color: #c89b6d;
     --primary-dark: #e0b98f;
 }
+
+:root {
+    --error-color: #b00020;
+}
+
+form select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font: inherit;
+    background-color: var(--white);
+    color: var(--text-color);
+}
+
+.error {
+    color: var(--error-color);
+    font-size: 0.9rem;
+    font-weight: bold;
+    margin-top: -8px;
+}
+
+.hint {
+    color: var(--light-text);
+    font-size: 0.85rem;
+    margin-top: -8px;
+}
+
+/* Hilangkan celah saat tidak ada pesan error */
+.error:empty {
+    display: none;
+}
+
+form [aria-invalid="true"] {
+    border: 2px solid var(--error-color);
+}
+
+form select:focus-visible {
+    outline: 3px solid var(--accent-color);
+    outline-offset: 3px;
+}
+
+#preview-kontak {
+    max-width: none;
+    margin: 0;
+    padding: 15px 20px;
+    background-color: var(--secondary-color);
+    border-radius: 8px;
+}
+
+#preview-kontak h3 {
+    color: var(--primary-dark);
+    margin-bottom: 10px;
+}
+
+#preview-kontak dt {
+    font-weight: bold;
+    margin-top: 8px;
+}
+
+#preview-kontak dd {
+    margin-left: 0;
+    color: var(--light-text);
+    overflow-wrap: anywhere;
+}
+
+/* Kontras warna error pada tema gelap */
+:root[data-theme="dark"] {
+    --error-color: #ff8a80;
+}
+
+:root[data-theme="dark"] .status-error {
+    color: #ff8a80;
+}
