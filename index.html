@@ -17,6 +17,7 @@
     <nav aria-label="Navigasi utama">
         <a href="#beranda">Beranda</a>
         <a href="#menu">Menu</a>
+        <a href="#dashboard">Dashboard</a>
         <a href="#tentang">Tentang Kami</a>
         <a href="#kontak">Kontak</a>
         <button id="theme-button" type="button" aria-pressed="false">Ganti Tema</button>
@@ -52,6 +53,25 @@
     <input type="search" id="cari-menu" placeholder="Cari nama menu..." aria-label="Cari menu">
 
     <p id="info-hasil" role="status" aria-live="polite"></p>
+
+</section>
+
+<section id="dashboard">
+
+    <h2>Dashboard</h2>
+
+    <dl id="ringkasan-menu"></dl>
+
+    <h3 id="judul-cuaca">Cuaca Tarakan Saat Ini</h3>
+
+    <p id="status-cuaca" role="status" aria-live="polite"></p>
+
+    <section id="hasil-cuaca" hidden aria-labelledby="judul-cuaca">
+        <dl id="cuaca-list"></dl>
+        <p id="rekomendasi-cuaca"></p>
+    </section>
+
+    <button type="button" id="btn-retry-cuaca" hidden>Coba Lagi</button>
 
 </section>
 
