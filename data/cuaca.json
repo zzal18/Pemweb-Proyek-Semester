@@ -1,0 +1,17 @@
+{
+    "latitude": 3.3274,
+    "longitude": 117.5786,
+    "timezone": "Asia/Makassar",
+    "current_units": {
+        "temperature_2m": "°C",
+        "relative_humidity_2m": "%",
+        "wind_speed_10m": "km/h"
+    },
+    "current": {
+        "time": "2026-10-09T14:00",
+        "temperature_2m": 31.5,
+        "relative_humidity_2m": 70,
+        "weather_code": 2,
+        "wind_speed_10m": 8.4
+    }
+}
