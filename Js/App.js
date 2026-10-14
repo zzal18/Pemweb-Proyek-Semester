@@ -1,6 +1,7 @@
 import {
     ringkasMenu, cariMenuById, filterByKategori, formatRupiah,
-    cariMenuByNama, simpanPreferensi, ambilPreferensi
+    cariMenuByNama, simpanPreferensi, ambilPreferensi,
+    ambilJson, terjemahkanKodeCuaca, rekomendasiMenu
 } from './utils.js';
 
 const daftarMenu = [
@@ -80,9 +81,8 @@ function renderMenu(items) {
         : `Menampilkan ${items.length} dari ${daftarMenu.length} menu.`;
 }
 
-// STATE, FILTER & PENCARIAN
-const tombolFilter = document.querySelectorAll('[data-filter]');
-const inputCari = document.querySelector('#cari-menu');
+    const tombolFilter = document.querySelectorAll('[data-filter]');
+    const inputCari = document.querySelector('#cari-menu');
 
 const state = {
     kategori: 'Semua',
@@ -105,8 +105,7 @@ function tandaiFilterAktif(kategori) {
     });
 }
 
-// Interaksi 1: klik filter kategori
-tombolFilter.forEach(tombol => {
+    tombolFilter.forEach(tombol => {
     tombol.addEventListener('click', () => {
         state.kategori = tombol.dataset.filter;
         tandaiFilterAktif(state.kategori);
@@ -115,14 +114,12 @@ tombolFilter.forEach(tombol => {
     });
 });
 
-// Interaksi 2: ketik untuk mencari
-inputCari.addEventListener('input', () => {
+    inputCari.addEventListener('input', () => {
     state.kataKunci = inputCari.value;
     terapkanFilter();
 });
 
-// EVENT DELEGATION: DETAIL 
-menu.addEventListener('click', (event) => {
+    menu.addEventListener('click', (event) => {
     const tombol = event.target.closest('[data-aksi="detail"]');
     if (!tombol) return;
 
@@ -144,8 +141,7 @@ menu.addEventListener('click', (event) => {
     tombol.setAttribute('aria-expanded', String(sedangTertutup));
 });
 
-// TEMA (WEB STORAGE)
-const tombolTema = document.querySelector('#theme-button');
+    const tombolTema = document.querySelector('#theme-button');
 
 function terapkanTema(tema) {
     document.documentElement.dataset.theme = tema;
@@ -159,13 +155,11 @@ tombolTema.addEventListener('click', () => {
     simpanPreferensi('a2-theme', temaBaru);
 });
 
-//FORM KONTAK
-// FORM KONTAK (MODUL 6)
-const formKontak = document.querySelector('#form-kontak');
-const statusForm = document.querySelector('#status-form');
-const previewKontak = document.querySelector('#preview-kontak');
-const previewKontakList = document.querySelector('#preview-kontak-list');
-const hintPesan = document.querySelector('#hint-pesan');
+    const formKontak = document.querySelector('#form-kontak');
+    const statusForm = document.querySelector('#status-form');
+    const previewKontak = document.querySelector('#preview-kontak');
+    const previewKontakList = document.querySelector('#preview-kontak-list');
+    const hintPesan = document.querySelector('#hint-pesan');
 
 const JENIS_PESAN = {
     saran: 'Saran',
@@ -180,8 +174,7 @@ function tampilkanStatus(pesan, sukses) {
     statusForm.className = sukses ? 'status-ok' : 'status-error';
 }
 
-// Mengembalikan object errors; kosong jika semua data valid
-function validateForm(data) {
+    function validateForm(data) {
     const errors = {};
 
     const nama = String(data.get('nama') ?? '').trim();
@@ -190,7 +183,6 @@ function validateForm(data) {
     const jenis = String(data.get('jenis') ?? '');
     const pesan = String(data.get('pesan') ?? '').trim();
 
-    // Nama: kosong, terlalu pendek, terlalu panjang, karakter tidak valid
     if (nama === '') {
         errors.nama = 'Nama wajib diisi.';
     } else if (nama.length < 3) {
@@ -201,27 +193,23 @@ function validateForm(data) {
         errors.nama = "Nama hanya boleh berisi huruf, spasi, titik, apostrof, dan tanda hubung.";
     }
 
-    // Email: kosong vs format tidak valid
-    if (email === '') {
+        if (email === '') {
         errors.email = 'Email wajib diisi.';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+    }   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
         errors.email = 'Format email tidak valid. Contoh: nama@contoh.com.';
     }
 
-    // Telepon: opsional, tapi jika diisi harus berformat nomor Indonesia
-    if (telepon !== '' && !/^(\+62|62|0)8\d{8,11}$/.test(telepon)) {
+        if (telepon !== '' && !/^(\+62|62|0)8\d{8,11}$/.test(telepon)) {
         errors.telepon = 'Nomor tidak valid. Gunakan format 08xxxxxxxxxx atau +628xxxxxxxxxx (10-13 digit).';
     }
 
-    // Jenis pesan: wajib dan harus dari pilihan yang tersedia
-    if (jenis === '') {
+        if (jenis === '') {
         errors.jenis = 'Pilih jenis pesan.';
     } else if (!Object.hasOwn(JENIS_PESAN, jenis)) {
         errors.jenis = 'Jenis pesan tidak tersedia. Pilih dari daftar.';
     }
 
-    // Pesan: kosong, terlalu pendek, terlalu panjang
-    if (pesan === '') {
+        if (pesan === '') {
         errors.pesan = 'Pesan wajib diisi.';
     } else if (pesan.length < 10) {
         errors.pesan = `Pesan minimal 10 karakter (baru ${pesan.length}).`;
@@ -243,7 +231,6 @@ function perbaruiHitungan() {
     hintPesan.textContent = `${panjang}/${BATAS_PESAN} karakter`;
 }
 
-// Preview memakai textContent (bukan innerHTML) sebagai sanitasi awal
 function tampilkanPreview(data) {
     const baris = [
         ['Nama', String(data.get('nama')).trim()],
@@ -278,7 +265,6 @@ formKontak.addEventListener('submit', (event) => {
             document.querySelector(`#error-${field}`).textContent = pesanError;
             formKontak.elements[field]?.setAttribute('aria-invalid', 'true');
         }
-        // Fokus ke field error pertama (urutan sesuai urutan di form)
         const urutan = ['nama', 'email', 'telepon', 'jenis', 'pesan'];
         const pertama = urutan.find(field => field in errors);
         formKontak.elements[pertama]?.focus();
@@ -295,16 +281,112 @@ formKontak.addEventListener('submit', (event) => {
     perbaruiHitungan();
 });
 
-// Hapus error sebuah field begitu pengguna mulai memperbaikinya
 formKontak.addEventListener('input', (event) => {
     const field = event.target;
     const errorEl = document.querySelector(`#error-${field.name}`);
     if (errorEl) errorEl.textContent = '';
     field.removeAttribute('aria-invalid');
-
+    
     if (field.name === 'pesan') perbaruiHitungan();
 });
-//INISIALISASI
+
+// DASHBOARD & REST API (MODUL 7)
+const USE_LOCAL_DATA = false;
+const ENDPOINT_CUACA = USE_LOCAL_DATA
+    ? './data/cuaca.json'
+    : 'https://api.open-meteo.com/v1/forecast?latitude=3.3274&longitude=117.5786&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Asia%2FMakassar';
+
+const ringkasanMenuEl = document.querySelector('#ringkasan-menu');
+const statusCuaca = document.querySelector('#status-cuaca');
+const hasilCuaca = document.querySelector('#hasil-cuaca');
+const cuacaList = document.querySelector('#cuaca-list');
+const rekomendasiCuaca = document.querySelector('#rekomendasi-cuaca');
+const tombolRetry = document.querySelector('#btn-retry-cuaca');
+
+function buatKartu(label, nilai) {
+    const kartu = document.createElement('div');
+    kartu.className = 'kartu';
+
+    const angka = document.createElement('strong');
+    angka.className = 'kartu-nilai';
+    angka.textContent = nilai;
+
+    const teks = document.createElement('span');
+    teks.textContent = label;
+
+    kartu.append(angka, teks);
+    return kartu;
+}
+
+function renderRingkasanMenu() {
+    const ringkasan = ringkasMenu(daftarMenu);
+
+    const baris = [
+        ['Jumlah Menu', ringkasan.jumlahMenu],
+        ['Total Stok', ringkasan.totalStok],
+        ['Menu Habis', ringkasan.menuHabis],
+        ['Nilai Stok', formatRupiah(ringkasan.totalNilaiStok)]
+    ];
+
+    ringkasanMenuEl.replaceChildren();
+    for (const [label, isi] of baris) {
+        const dt = document.createElement('dt');
+        const dd = document.createElement('dd');
+        dt.textContent = label;
+        dd.textContent = isi;
+        ringkasanMenuEl.append(dt, dd);
+    }
+}
+function tampilkanStatusCuaca(pesan, kelas) {
+    statusCuaca.textContent = pesan;
+    statusCuaca.className = kelas;
+}
+
+function renderCuaca(current, satuan) {
+    const baris = [
+        ['Waktu', current.time.replace('T', ' ')],
+        ['Kondisi', terjemahkanKodeCuaca(current.weather_code)],
+        ['Suhu', `${current.temperature_2m} ${satuan.temperature_2m}`],
+        ['Kelembapan', `${current.relative_humidity_2m} ${satuan.relative_humidity_2m}`],
+        ['Kecepatan angin', `${current.wind_speed_10m} ${satuan.wind_speed_10m}`]
+    ];
+
+    cuacaList.replaceChildren();
+    for (const [label, isi] of baris) {
+        const dt = document.createElement('dt');
+        const dd = document.createElement('dd');
+        dt.textContent = label;
+        dd.textContent = isi;
+        cuacaList.append(dt, dd);
+    }
+
+    rekomendasiCuaca.textContent = rekomendasiMenu(current.temperature_2m, current.weather_code);
+    hasilCuaca.hidden = false;
+}
+
+async function muatCuaca() {
+    hasilCuaca.hidden = true;
+    tombolRetry.hidden = true;
+    tampilkanStatusCuaca('Memuat data cuaca...', 'status-loading');
+
+    try {
+        const data = await ambilJson(ENDPOINT_CUACA);
+        if (!data.current) {
+            tampilkanStatusCuaca('Data cuaca belum tersedia.', 'status-empty');
+            return;
+        }
+
+        renderCuaca(data.current, data.current_units);
+        tampilkanStatusCuaca('Data cuaca berhasil dimuat.', 'status-ok');
+    } catch (error) {
+        console.error(error);
+        tampilkanStatusCuaca('Data cuaca belum dapat dimuat. Coba kembali.', 'status-error');
+        tombolRetry.hidden = false;
+    }
+}
+
+tombolRetry.addEventListener('click', muatCuaca);
+
 const temaTersimpan = ambilPreferensi('a2-theme', 'light');
 terapkanTema(temaTersimpan === 'dark' ? 'dark' : 'light');
 
@@ -314,6 +396,8 @@ state.kategori = kategoriValid ? kategoriTersimpan : 'Semua';
 tandaiFilterAktif(state.kategori);
 
 terapkanFilter();
+renderRingkasanMenu();
+muatCuaca();
 
 try {
     console.log('--- Menu Tersedia ---');
