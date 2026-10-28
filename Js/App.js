@@ -290,7 +290,7 @@ formKontak.addEventListener('input', (event) => {
     if (field.name === 'pesan') perbaruiHitungan();
 });
 
-// DASHBOARD & REST API (MODUL 7)
+// DASHBOARD & REST API
 const USE_LOCAL_DATA = false;
 const ENDPOINT_CUACA = USE_LOCAL_DATA
     ? './data/cuaca.json'

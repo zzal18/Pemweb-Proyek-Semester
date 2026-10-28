@@ -358,7 +358,6 @@ form textarea {
     color: var(--text-color);
 }
 
-/* Tema gelap: cukup menimpa variabel di :root */
 :root[data-theme="dark"] {
     --white: #1e1a17;
     --secondary-color: #2a2420;
@@ -396,7 +395,6 @@ form select {
     margin-top: -8px;
 }
 
-/* Hilangkan celah saat tidak ada pesan error */
 .error:empty {
     display: none;
 }
@@ -441,4 +439,73 @@ form select:focus-visible {
 
 :root[data-theme="dark"] .status-error {
     color: #ff8a80;
+}
+
+#dashboard h3 {
+    color: var(--primary-dark);
+    margin: 30px 0 10px;
+}
+
+#ringkasan-menu {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    column-gap: 20px;
+    row-gap: 8px;
+    padding: 15px 20px;
+    background-color: var(--secondary-color);
+    border-radius: 8px;
+}
+
+#ringkasan-menu dt {
+    font-weight: bold;
+}
+
+#ringkasan-menu dd {
+    margin-left: 0;
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+#status-cuaca {
+    font-weight: bold;
+}
+
+.status-loading,
+.status-empty {
+    color: var(--light-text);
+}
+
+#hasil-cuaca {
+    max-width: none;
+    margin: 0;
+    padding: 15px 20px;
+    background-color: var(--secondary-color);
+    border-radius: 8px;
+}
+
+#hasil-cuaca dt {
+    font-weight: bold;
+    margin-top: 8px;
+}
+
+#hasil-cuaca dd {
+    margin-left: 0;
+    color: var(--light-text);
+}
+
+#rekomendasi-cuaca {
+    margin-top: 12px;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+#btn-retry-cuaca {
+    margin-top: 15px;
+    background-color: var(--primary-color);
+    color: var(--white);
+    border: none;
+    padding: 10px 22px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
 }

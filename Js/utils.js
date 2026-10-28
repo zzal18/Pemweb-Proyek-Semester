@@ -1,12 +1,3 @@
-// js/utils.js
-// Kumpulan fungsi pengolahan data menu A2 Coffee and Food.
-// Setiap fungsi kecil, punya satu tanggung jawab, dan divalidasi inputnya.
-
-/**
- * Menghasilkan ringkasan statistik dari daftar menu.
- * @param {Array<Object>} data - array of objects menu
- * @returns {{jumlahMenu:number, totalStok:number, menuHabis:number, totalNilaiStok:number}}
- */
 export function ringkasMenu(data) {
     if (!Array.isArray(data)) {
         throw new TypeError('Data menu harus berupa array');
@@ -20,12 +11,6 @@ export function ringkasMenu(data) {
     };
 }
 
-/**
- * Mencari satu menu berdasarkan id.
- * @param {Array<Object>} data
- * @param {number} id
- * @returns {Object} objek menu yang ditemukan
- */
 export function cariMenuById(data, id) {
     if (!Array.isArray(data)) {
         throw new TypeError('Data menu harus berupa array');
@@ -39,12 +24,7 @@ export function cariMenuById(data, id) {
 
     return menu;
 }
-/**
- * Mengambil semua menu pada satu kategori tertentu (mis. "Minuman"/"Cemilan").
- * @param {Array<Object>} data
- * @param {string} kategori
- * @returns {Array<Object>}
- */
+
 export function filterByKategori(data, kategori) {
     if (!Array.isArray(data)) {
         throw new TypeError('Data menu harus berupa array');
@@ -53,11 +33,6 @@ export function filterByKategori(data, kategori) {
     return data.filter(item => item.kategori.toLowerCase() === kategori.toLowerCase());
 }
 
-/**
- * Memformat angka menjadi format Rupiah sederhana, mis. 12000 -> "Rp12.000".
- * @param {number} angka
- * @returns {string}
- */
 export function formatRupiah(angka) {
     if (typeof angka !== 'number' || Number.isNaN(angka)) {
         throw new TypeError('Harga harus berupa angka');
@@ -65,12 +40,7 @@ export function formatRupiah(angka) {
 
     return `Rp${angka.toLocaleString('id-ID')}`;
 }
-/**
- * Mencari menu berdasarkan potongan nama (tidak peka huruf besar/kecil).
- * @param {Array<Object>} data
- * @param {string} kataKunci
- * @returns {Array<Object>}
- */
+
 export function cariMenuByNama(data, kataKunci) {
     if (!Array.isArray(data)) {
         throw new TypeError('Data menu harus berupa array');
@@ -80,9 +50,6 @@ export function cariMenuByNama(data, kataKunci) {
     return data.filter(item => item.nama.toLowerCase().includes(kunci));
 }
 
-/**
- * Menyimpan preferensi NON-SENSITIF ke localStorage.
- */
 export function simpanPreferensi(kunci, nilai) {
     try {
         localStorage.setItem(kunci, nilai);
@@ -91,13 +58,40 @@ export function simpanPreferensi(kunci, nilai) {
     }
 }
 
-/**
- * Mengambil preferensi dari localStorage, atau nilai bawaan jika tidak ada.
- */
 export function ambilPreferensi(kunci, bawaan) {
     try {
         return localStorage.getItem(kunci) ?? bawaan;
     } catch (error) {
         return bawaan;
     }
+}
+
+export async function ambilJson(url) {
+    const response = await fetch(url);
+
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+    }
+
+    return response.json();
+}
+
+export function terjemahkanKodeCuaca(kode) {
+    if (kode >= 95) return 'Badai petir';
+    if (kode >= 80) return 'Hujan deras sesaat';
+    if (kode >= 61) return 'Hujan';
+    if (kode >= 51) return 'Gerimis';
+    if (kode >= 45) return 'Berkabut';
+    if (kode >= 1) return 'Berawan';
+    return 'Cerah';
+}
+
+export function rekomendasiMenu(suhu, kode) {
+    if (kode >= 51) {
+        return 'Cuaca basah, cocok dinikmati dengan A2 Coffee dan Roti Bakar hangat.';
+    }
+    if (suhu >= 31) {
+        return 'Cuaca panas, cocok dengan Es Teh Manis atau A2 Coffee dingin.';
+    }
+    return 'Cuaca nyaman, semua menu cocok dinikmati.';
 }
