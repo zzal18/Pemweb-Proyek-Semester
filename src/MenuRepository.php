@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App;
 
+use PDO;
+
 final class MenuRepository
 {
     public const KATEGORI = ['Minuman', 'Cemilan'];
@@ -12,7 +14,7 @@ final class MenuRepository
         FROM menu m
         JOIN kategori k ON k.id = m.kategori_id";
 
-    public static function all(?string $kategori = null, ?string $kataKunci = null): array
+    private static function filter(?string $kategori, ?string $kataKunci): array
     {
         $where  = [];
         $params = [];
@@ -26,21 +28,63 @@ final class MenuRepository
             $params['kunci'] = '%' . addcslashes(trim($kataKunci), '%_\\') . '%';
         }
 
-        $sql = self::SELECT
-            . ($where !== [] ? ' WHERE ' . implode(' AND ', $where) : '')
-            . ' ORDER BY m.id';
+        return [$where !== [] ? ' WHERE ' . implode(' AND ', $where) : '', $params];
+    }
+
+    public static function all(
+        ?string $kategori = null,
+        ?string $kataKunci = null,
+        ?int $limit = null,
+        int $offset = 0
+    ): array {
+        [$where, $params] = self::filter($kategori, $kataKunci);
+
+        $sql = self::SELECT . $where . ' ORDER BY m.id';
+        if ($limit !== null) {
+            $sql .= ' LIMIT :limit OFFSET :offset';
+        }
 
         $stmt = Database::connection()->prepare($sql);
-        $stmt->execute($params);
+        foreach ($params as $nama => $nilai) {
+            $stmt->bindValue($nama, $nilai);
+        }
+        if ($limit !== null) {
+            $stmt->bindValue('limit', $limit, PDO::PARAM_INT);
+            $stmt->bindValue('offset', $offset, PDO::PARAM_INT);
+        }
+        $stmt->execute();
         return $stmt->fetchAll();
     }
 
-    public static function find(int $id): ?array
+    public static function count(?string $kategori = null, ?string $kataKunci = null): int
     {
-        $stmt = Database::connection()->prepare(self::SELECT . ' WHERE m.id = :id');
+        [$where, $params] = self::filter($kategori, $kataKunci);
+
+        $stmt = Database::connection()->prepare(
+            'SELECT COUNT(*) FROM menu m JOIN kategori k ON k.id = m.kategori_id' . $where
+        );
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn();
+    }
+
+    public static function find(int $id, bool $forUpdate = false): ?array
+    {
+        $sql = self::SELECT . ' WHERE m.id = :id' . ($forUpdate ? ' FOR UPDATE' : '');
+        $stmt = Database::connection()->prepare($sql);
         $stmt->execute(['id' => $id]);
         $row = $stmt->fetch();
         return $row === false ? null : $row;
+    }
+
+    public static function editable(array $row): array
+    {
+        return [
+            'nama'      => $row['nama'],
+            'kategori'  => $row['kategori'],
+            'harga'     => $row['harga'],
+            'stok'      => $row['stok'],
+            'deskripsi' => $row['deskripsi'],
+        ];
     }
 
     public static function create(array $data): int
@@ -58,5 +102,30 @@ final class MenuRepository
             'stok'      => $data['stok'],
         ]);
         return (int) $pdo->lastInsertId();
+    }
+
+    public static function update(int $id, array $data): void
+    {
+        $stmt = Database::connection()->prepare(
+            'UPDATE menu
+                SET kategori_id = (SELECT id FROM kategori WHERE nama = :kategori),
+                    nama = :nama, deskripsi = :deskripsi, harga = :harga, stok = :stok
+            WHERE id = :id'
+        );
+        $stmt->execute([
+            'kategori'  => $data['kategori'],
+            'nama'      => $data['nama'],
+            'deskripsi' => $data['deskripsi'],
+            'harga'     => $data['harga'],
+            'stok'      => $data['stok'],
+            'id'        => $id,
+        ]);
+    }
+
+    public static function delete(int $id): bool
+    {
+        $stmt = Database::connection()->prepare('DELETE FROM menu WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+        return $stmt->rowCount() > 0;
     }
 }

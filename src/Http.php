@@ -37,6 +37,14 @@ final class Http
         self::json($status, $body, $headers);
     }
 
+    // 204 No Content: sukses tanpa body (dipakai DELETE)
+    public static function noContent(): never
+    {
+        http_response_code(204);
+        header_remove('Content-Type');
+        exit;
+    }
+
     // Middleware 1: semua response JSON UTF-8
     public static function jsonHeaders(): void
     {

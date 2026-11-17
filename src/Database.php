@@ -5,6 +5,7 @@ namespace App;
 
 use PDO;
 use RuntimeException;
+use Throwable;
 
 final class Database
 {
@@ -34,6 +35,22 @@ final class Database
         ]);
 
         return self::$pdo;
+    }
+
+    public static function transaction(callable $callback): mixed
+    {
+        $pdo = self::connection();
+        $pdo->beginTransaction();
+        try {
+            $hasil = $callback($pdo);
+            $pdo->commit();
+            return $hasil;
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
     }
 
     private static function required(string $key): string
