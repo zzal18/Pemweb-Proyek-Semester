@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Panel Admin - A2 Coffee and Food</title>
+
+    <link rel="Stylesheet" href="Css/StyleSheet.css">
+    <script type="module" src="Js/admin.js"></script>
+
+</head>
+
+<body>
+<header>
+    <h1>Panel Admin</h1>
+
+    <nav aria-label="Navigasi admin">
+        <a href="index.html">Lihat Situs</a>
+        <button id="theme-button" type="button" aria-pressed="false">Ganti Tema</button>
+    </nav>
+</header>
+
+<main id="main">
+
+<section id="akses">
+
+    <h2>Pengelolaan Menu</h2>
+
+    <p id="status-sesi" role="status" aria-live="polite"></p>
+
+    <p id="bar-sesi" hidden>
+        <span id="info-sesi"></span>
+        <button type="button" class="filter-btn" id="btn-logout">Keluar</button>
+    </p>
+
+    <form id="form-login" action="#" method="post">
+
+        <h3>Masuk sebagai Admin</h3>
+        <p>Halaman ini hanya untuk admin A2 Coffee and Food.</p>
+
+        <label for="login-email">Email</label>
+        <input type="email" id="login-email" name="email" required maxlength="190"
+            autocomplete="username">
+
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" name="password" required maxlength="200"
+            autocomplete="current-password">
+
+        <button type="submit" id="btn-login">Masuk</button>
+
+    </form>
+
+</section>
+
+<div id="panel-admin" hidden>
+
+<section id="kelola">
+
+    <h2>Tambah / Ubah Menu</h2>
+
+    <form id="form-menu" action="#" method="post">
+
+        <h3 id="judul-form-menu">Tambah Menu Baru</h3>
+
+        <label for="menu-nama">Nama menu <span aria-hidden="true">*</span></label>
+        <input type="text" id="menu-nama" name="nama" required maxlength="100"
+            aria-describedby="error-menu-nama">
+        <small class="error" id="error-menu-nama"></small>
+
+        <label for="menu-kategori">Kategori <span aria-hidden="true">*</span></label>
+        <select id="menu-kategori" name="kategori" required aria-describedby="error-menu-kategori">
+            <option value="">-- Pilih kategori --</option>
+            <option value="Minuman">Minuman</option>
+            <option value="Cemilan">Cemilan</option>
+        </select>
+        <small class="error" id="error-menu-kategori"></small>
+
+        <label for="menu-harga">Harga (Rp) <span aria-hidden="true">*</span></label>
+        <input type="number" id="menu-harga" name="harga" required min="0" step="1" inputmode="numeric"
+            aria-describedby="error-menu-harga">
+        <small class="error" id="error-menu-harga"></small>
+
+        <label for="menu-stok">Stok <span aria-hidden="true">*</span></label>
+        <input type="number" id="menu-stok" name="stok" required min="0" step="1" inputmode="numeric"
+            aria-describedby="error-menu-stok">
+        <small class="error" id="error-menu-stok"></small>
+
+        <label for="menu-deskripsi">Deskripsi</label>
+        <textarea id="menu-deskripsi" name="deskripsi" maxlength="255"
+            aria-describedby="error-menu-deskripsi"></textarea>
+        <small class="error" id="error-menu-deskripsi"></small>
+
+        <button type="submit" id="btn-simpan-menu">Simpan Menu</button>
+        <button type="button" id="btn-batal-edit" class="filter-btn" hidden>Batal Edit</button>
+
+        <p id="status-menu" role="status" aria-live="polite"></p>
+
+    </form>
+
+</section>
+
+<section id="daftar-menu">
+
+    <h2>Daftar Menu</h2>
+
+    <div class="kontrol-daftar">
+        <input type="search" id="cari-admin" placeholder="Cari nama menu..." aria-label="Cari menu">
+
+        <select id="filter-admin" aria-label="Filter kategori">
+            <option value="Semua">Semua kategori</option>
+            <option value="Minuman">Minuman</option>
+            <option value="Cemilan">Cemilan</option>
+        </select>
+    </div>
+
+    <p id="info-daftar" role="status" aria-live="polite"></p>
+
+    <p id="status-aksi" role="status" aria-live="polite"></p>
+
+    <div class="tabel-wrap">
+        <table class="tabel-menu" aria-label="Daftar menu">
+            <thead>
+                <tr>
+                    <th scope="col">Nama</th>
+                    <th scope="col">Kategori</th>
+                    <th scope="col" class="angka">Harga</th>
+                    <th scope="col" class="angka">Stok</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="isi-tabel"></tbody>
+        </table>
+    </div>
+
+    <nav id="paginasi-admin" aria-label="Halaman daftar menu" hidden>
+        <button type="button" class="filter-btn" id="btn-sebelumnya">&laquo; Sebelumnya</button>
+        <span id="info-halaman"></span>
+        <button type="button" class="filter-btn" id="btn-berikutnya">Berikutnya &raquo;</button>
+    </nav>
+
+</section>
+
+</div>
+
+</main>
+
+<footer>
+
+    <p>&copy; 2026 A2 Coffee and Food - Area admin</p>
+
+</footer>
+
+</body>
+</html>
