@@ -1,36 +1,47 @@
 import {
-    ringkasMenu, cariMenuById, filterByKategori, formatRupiah,
-    cariMenuByNama, simpanPreferensi, ambilPreferensi,
-    ambilJson, terjemahkanKodeCuaca, rekomendasiMenu
+    ringkasMenu, cariMenuById, formatRupiah,
+    simpanPreferensi, ambilPreferensi,
+    ambilJson, panggilApi,
+    terjemahkanKodeCuaca, rekomendasiMenu
 } from './utils.js';
 
-const daftarMenu = [
-    { id: 1, nama: 'A2 Coffee',    kategori: 'Minuman', harga: 12000, stok: 25, status: 'Tersedia',
-    deskripsi: 'Kopi susu dengan perpaduan kopi dan susu yang cocok dinikmati kapan saja.', gambar: 'Images/A2.png' },
-    { id: 2, nama: 'Cireng A2',    kategori: 'Cemilan', harga: 8000,  stok: 15, status: 'Tersedia',
-    deskripsi: 'Cemilan yang lumayan diminati oleh pembeli.', gambar: 'Images/Cireng A2.jpg' },
-    { id: 3, nama: 'Es Teh Manis', kategori: 'Minuman', harga: 5000,  stok: 0,  status: 'Habis',
-    deskripsi: 'Teh manis dingin yang menyegarkan.', gambar: '' },
-    { id: 4, nama: 'Roti Bakar',   kategori: 'Cemilan', harga: 10000, stok: 10, status: 'Tersedia',
-    deskripsi: 'Roti bakar hangat dengan topping pilihan.', gambar: '' }
-];
-
-const menuTersedia = daftarMenu.filter(item => item.status === 'Tersedia');
-
-const namaMenu = daftarMenu.map(item => item.nama);
-
-const totalStokMinuman = daftarMenu
-    .filter(item => item.kategori === 'Minuman')
-    .reduce((total, item) => total + item.stok, 0);
-
-function buatLabelMenu({ nama, harga, stok }) {
-    const hargaFormatted = formatRupiah(harga);
-    return `${nama} - ${hargaFormatted} (stok: ${stok})`;
-}
+let daftarMenu = [];   // semua menu (untuk ringkasan dashboard)
+let halamanMenu = [];  // menu pada halaman yang sedang tampil
 
 // DOM & RENDER 
 const menu = document.querySelector('#menu');
 const infoHasil = document.querySelector('#info-hasil');
+const ENDPOINT_MENU = 'api/menu.php';
+const tombolRetryMenu = document.querySelector('#btn-retry-menu');
+const paginasi = document.querySelector('#paginasi-menu');
+const tombolSebelumnya = document.querySelector('#btn-sebelumnya');
+const tombolBerikutnya = document.querySelector('#btn-berikutnya');
+const infoHalaman = document.querySelector('#info-halaman');
+const PER_HALAMAN = 6;
+
+function buatPlaceholder(nama) {
+    const kosong = document.createElement('div');
+    kosong.className = 'gambar-kosong';
+    kosong.setAttribute('role', 'img');
+    kosong.setAttribute('aria-label', `Foto ${nama} belum tersedia`);
+    kosong.textContent = nama.charAt(0).toUpperCase();
+    return kosong;
+}
+
+function buatGambar(item) {
+    if (!item.gambar) return buatPlaceholder(item.nama);
+
+    const gambar = document.createElement('img');
+    gambar.src = item.gambar;
+    gambar.alt = item.nama;
+    gambar.loading = 'lazy';
+    gambar.addEventListener(
+        'error',
+        () => gambar.replaceWith(buatPlaceholder(item.nama)),
+        { once: true }
+    );
+    return gambar;
+}
 
 function buatCard(item) {
     const card = document.createElement('article');
@@ -40,12 +51,7 @@ function buatCard(item) {
     judul.textContent = item.nama;
     card.append(judul);
 
-    if (item.gambar) {
-        const gambar = document.createElement('img');
-        gambar.src = item.gambar;
-        gambar.alt = item.nama;
-        card.append(gambar);
-    }
+    card.append(buatGambar(item));
 
     const badge = document.createElement('small');
     badge.className = item.status === 'Tersedia' ? 'badge badge-ok' : 'badge badge-habis';
@@ -65,20 +71,34 @@ function buatCard(item) {
     tombolDetail.textContent = 'Detail';
     tombolDetail.setAttribute('aria-expanded', 'false');
 
-    card.append(badge, info, detail, tombolDetail);
+    const aksi = document.createElement('div');
+    aksi.className = 'aksi-kartu';
+    aksi.append(tombolDetail);
+
+    card.append(badge, info, detail, aksi);
     return card;
 }
 
-function renderMenu(items) {
+function renderPaginasi(meta) {
+    const totalHalaman = meta?.total_pages ?? 1;
+    paginasi.hidden = totalHalaman <= 1;
+    infoHalaman.textContent = `Halaman ${state.page} dari ${totalHalaman}`;
+    tombolSebelumnya.disabled = state.page <= 1;
+    tombolBerikutnya.disabled = state.page >= totalHalaman;
+}
+
+function renderMenu(items, meta = null) {
     menu.querySelectorAll('article').forEach(card => card.remove());
 
     for (const item of items) {
-        menu.append(buatCard(item));
+        paginasi.before(buatCard(item));
     }
 
+    const total = meta?.total ?? items.length;
     infoHasil.textContent = items.length === 0
         ? 'Menu tidak ditemukan.'
-        : `Menampilkan ${items.length} dari ${daftarMenu.length} menu.`;
+        : `Menampilkan ${items.length} dari ${total} menu.`;
+    renderPaginasi(meta);
 }
 
     const tombolFilter = document.querySelectorAll('[data-filter]');
@@ -86,15 +106,14 @@ function renderMenu(items) {
 
 const state = {
     kategori: 'Semua',
-    kataKunci: ''
+    kataKunci: '',
+    page: 1
 };
 
+// Filter/pencarian dikerjakan server (?kategori=&q=&page=); ganti filter -> kembali ke halaman 1.
 function terapkanFilter() {
-    const berdasarkanKategori = state.kategori === 'Semua'
-        ? daftarMenu
-        : filterByKategori(daftarMenu, state.kategori);
-
-    renderMenu(cariMenuByNama(berdasarkanKategori, state.kataKunci));
+    state.page = 1;
+    muatMenu();
 }
 
 function tandaiFilterAktif(kategori) {
@@ -114,22 +133,32 @@ function tandaiFilterAktif(kategori) {
     });
 });
 
-    inputCari.addEventListener('input', () => {
+let timerCari = null;
+inputCari.addEventListener('input', () => {
     state.kataKunci = inputCari.value;
-    terapkanFilter();
+    clearTimeout(timerCari);
+    timerCari = setTimeout(terapkanFilter, 300);   // debounce agar tidak memanggil API tiap ketikan
 });
 
-    menu.addEventListener('click', (event) => {
-    const tombol = event.target.closest('[data-aksi="detail"]');
-    if (!tombol) return;
+tombolSebelumnya.addEventListener('click', () => {
+    if (state.page > 1) {
+        state.page -= 1;
+        muatMenu();
+    }
+});
 
-    const card = tombol.closest('article');
+tombolBerikutnya.addEventListener('click', () => {
+    state.page += 1;
+    muatMenu();
+});
+
+function ubahDetail(tombol, card) {
     const detail = card.querySelector('.detail');
     const sedangTertutup = detail.hidden;
 
     if (sedangTertutup) {
         try {
-            const item = cariMenuById(daftarMenu, Number(card.dataset.id));
+            const item = cariMenuById(halamanMenu, Number(card.dataset.id));
             detail.textContent = `${item.deskripsi} Stok tersisa: ${item.stok}.`;
         } catch (error) {
             detail.textContent = error.message;
@@ -139,6 +168,13 @@ function tandaiFilterAktif(kategori) {
     detail.hidden = !sedangTertutup;
     tombol.textContent = sedangTertutup ? 'Tutup' : 'Detail';
     tombol.setAttribute('aria-expanded', String(sedangTertutup));
+}
+
+menu.addEventListener('click', (event) => {
+    const tombol = event.target.closest('[data-aksi]');
+    if (!tombol) return;
+
+    if (tombol.dataset.aksi === 'detail') ubahDetail(tombol, tombol.closest('article'));
 });
 
     const tombolTema = document.querySelector('#theme-button');
@@ -395,35 +431,59 @@ const kategoriValid = ['Semua', 'Minuman', 'Cemilan'].includes(kategoriTersimpan
 state.kategori = kategoriValid ? kategoriTersimpan : 'Semua';
 tandaiFilterAktif(state.kategori);
 
-terapkanFilter();
-renderRingkasanMenu();
-muatCuaca();
+// ===== MEMUAT MENU DARI API (publik, hanya baca) =====
+let permintaanTerakhir = 0;
 
-try {
-    console.log('--- Menu Tersedia ---');
-    console.table(menuTersedia);
+async function muatMenu() {
+    const nomor = ++permintaanTerakhir;   // abaikan respons usang jika ada request lebih baru
+    tombolRetryMenu.hidden = true;
+    infoHasil.textContent = 'Memuat menu...';
 
-    console.log('--- Semua Nama Menu ---');
-    console.log(namaMenu);
+    const params = new URLSearchParams({ page: String(state.page), per_page: String(PER_HALAMAN) });
+    if (state.kategori !== 'Semua') params.set('kategori', state.kategori);
+    const kunci = state.kataKunci.trim();
+    if (kunci !== '') params.set('q', kunci);
 
-    console.log('--- Total Stok Minuman ---');
-    console.log(totalStokMinuman);
+    try {
+        const hasil = await panggilApi(`${ENDPOINT_MENU}?${params}`);
+        if (nomor !== permintaanTerakhir) return;
+        if (!Array.isArray(hasil?.data) || !hasil.meta) {
+            throw new Error('Format respons menu tidak dikenali');
+        }
 
-    console.log('--- Ringkasan Menu (dari utils.js) ---');
-    console.log(ringkasMenu(daftarMenu));
+        // Halaman kosong (mis. data berkurang) -> mundur ke halaman terakhir yang valid
+        if (hasil.data.length === 0 && state.page > 1) {
+            state.page = hasil.meta.total_pages;
+            return muatMenu();
+        }
 
-    console.log('--- Menu Kategori Cemilan (dari utils.js) ---');
-    console.log(filterByKategori(daftarMenu, 'Cemilan'));
-
-    console.log('--- Label Menu ---');
-    daftarMenu.forEach(item => console.log(buatLabelMenu(item)));
-
-    console.log('--- Cari Menu id=2 (dari utils.js) ---');
-    console.log(cariMenuById(daftarMenu, 2));
-
-    console.log('--- Uji Error Handling: cari id=99 ---');
-    console.log(cariMenuById(daftarMenu, 99));
-
-} catch (error) {
-    console.error('Terjadi masalah saat memproses data menu:', error.message);
+        halamanMenu = hasil.data;
+        renderMenu(halamanMenu, hasil.meta);
+    } catch (error) {
+        if (nomor !== permintaanTerakhir) return;
+        console.error(error);
+        halamanMenu = [];
+        renderMenu([]);
+        infoHasil.textContent = 'Menu belum dapat dimuat. Coba kembali.';
+        tombolRetryMenu.hidden = false;
+    }
 }
+
+async function muatRingkasan() {
+    try {
+        const hasil = await panggilApi(ENDPOINT_MENU);
+        daftarMenu = Array.isArray(hasil?.data) ? hasil.data : [];
+        renderRingkasanMenu();
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+function segarkanData() {
+    return Promise.all([muatMenu(), muatRingkasan()]);
+}
+
+tombolRetryMenu.addEventListener('click', muatMenu);
+
+segarkanData();
+muatCuaca();

@@ -95,3 +95,39 @@ export function rekomendasiMenu(suhu, kode) {
     }
     return 'Cuaca nyaman, semua menu cocok dinikmati.';
 }
+
+export class ApiError extends Error {
+    constructor(message, status = 0, errors = {}) {
+        super(message);
+        this.name = 'ApiError';
+        this.status = status;
+        this.errors = errors;
+    }
+}
+
+export async function panggilApi(url, { method = 'GET', body } = {}) {
+    const options = { method, headers: { Accept: 'application/json' } };
+    if (body !== undefined) {
+        options.headers['Content-Type'] = 'application/json';
+        options.body = JSON.stringify(body);
+    }
+
+    let response;
+    try {
+        response = await fetch(url, options);
+    } catch {
+        throw new ApiError('Tidak dapat terhubung ke server.');
+    }
+
+    if (response.status === 204) return null;
+
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+        throw new ApiError(
+            payload?.message ?? `HTTP ${response.status}`,
+            response.status,
+            payload?.errors ?? {}
+        );
+    }
+    return payload;
+}

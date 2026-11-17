@@ -157,6 +157,32 @@ article p {
     color: var(--light-text);
 }
 
+.gambar-kosong {
+    width: 100%;
+    height: 200px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--secondary-color);
+    color: var(--accent-color);
+    font-size: 4rem;
+    font-weight: bold;
+}
+
+#btn-retry-menu {
+    grid-column: 1 / -1;
+    justify-self: center;
+    background-color: var(--primary-color);
+    color: var(--white);
+    border: none;
+    padding: 10px 22px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
 #tentang {
     background-color: var(--secondary-color);
     max-width: 100%;
@@ -508,4 +534,191 @@ form select:focus-visible {
     border-radius: 8px;
     font-weight: bold;
     cursor: pointer;
+}
+
+/* ===== MODUL 11: CRUD menu, pagination, aksi kartu ===== */
+#status-aksi {
+    grid-column: 1 / -1;
+    text-align: center;
+    font-weight: bold;
+}
+
+#status-aksi:empty {
+    display: none;
+}
+
+#paginasi-menu {
+    grid-column: 1 / -1;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+}
+
+#paginasi-menu[hidden] {
+    display: none;
+}
+
+#info-halaman {
+    color: var(--light-text);
+}
+
+.filter-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.filter-btn:disabled:hover {
+    background-color: var(--white);
+    color: var(--primary-color);
+}
+
+.aksi-kartu {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-hapus {
+    color: var(--error-color);
+    border-color: var(--error-color);
+}
+
+.btn-hapus:hover {
+    background-color: var(--error-color);
+    color: var(--white);
+}
+
+#kelola {
+    max-width: 700px;
+}
+
+#judul-form-menu {
+    color: var(--primary-dark);
+}
+
+#btn-batal-edit {
+    align-self: flex-start;
+}
+
+#status-menu {
+    font-weight: bold;
+}
+
+/* ===== Login admin ===== */
+form[hidden],
+#panel-kelola[hidden],
+#bar-sesi[hidden] {
+    display: none;
+}
+
+#status-sesi {
+    font-weight: bold;
+}
+
+#status-sesi:empty {
+    display: none;
+}
+
+#bar-sesi {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+#form-login p {
+    color: var(--light-text);
+}
+
+/* ===== Halaman admin (admin.html) ===== */
+#daftar-menu {
+    max-width: var(--container-width);
+}
+
+.kontrol-daftar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 15px 0;
+}
+
+#cari-admin,
+#filter-admin {
+    padding: 10px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font: inherit;
+    background-color: var(--white);
+    color: var(--text-color);
+}
+
+#cari-admin {
+    flex: 1 1 240px;
+    max-width: 400px;
+}
+
+#info-daftar {
+    color: var(--light-text);
+    margin-bottom: 8px;
+}
+
+#status-aksi {
+    margin-bottom: 8px;
+}
+
+.tabel-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+}
+
+.tabel-menu {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 640px;
+}
+
+.tabel-menu th,
+.tabel-menu td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+.tabel-menu th {
+    background-color: var(--secondary-color);
+    color: var(--primary-dark);
+}
+
+.tabel-menu .angka {
+    text-align: right;
+}
+
+.tabel-menu tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.aksi-tabel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.aksi-tabel .btn-detail {
+    margin-top: 0;
+    padding: 5px 14px;
+}
+
+#paginasi-admin {
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+#paginasi-admin[hidden] {
+    display: none;
 }
