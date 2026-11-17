@@ -46,3 +46,16 @@
 - Mobile (<= 500px):
   - Navigasi ringkas dengan spasi rapat.
   - Tombol pada formulir membesar memenuhi lebar layar (100%).
+
+---
+
+## Modul 11 - CRUD Full-Stack (Resource: menu)
+
+- Backend: `api/menu.php` (GET, POST, PUT, PATCH, DELETE), `src/MenuRepository.php`, `src/MenuValidator.php`. Semua query memakai prepared statement; PUT/PATCH memakai transaksi.
+- Frontend publik (`index.html`): kartu menu hanya-baca dengan filter kategori, pencarian, dan pagination yang diproses server. Tidak ada tautan atau tombol admin di halaman ini.
+- Panel admin ada di halaman terpisah `admin.html` (dibuka di jendela/tab sendiri, tidak ditautkan dari situs publik, `noindex`). Isinya: login, form tambah/ubah menu, dan tabel menu dengan Edit/Hapus (`confirm`), cari, filter, serta pagination. Buka langsung lewat `http://localhost/Pemweb-Proyek%20Semester/admin.html`. Menyembunyikan halaman bukan pengaman; yang melindungi data adalah pemeriksaan sesi dan role di server (401/403).
+- Dokumentasi endpoint dan contoh error: `docs/api.md`.
+- Test matrix: `docs/test-matrix.md`; uji otomatis: `php tests/api_test.php`.
+- Setup database: jalankan `database/schema.sql` lalu `database/seed.sql`, salin `.env.example` menjadi `.env`.
+- Hak akses: membaca menu bersifat publik; menambah, mengubah, dan menghapus hanya untuk **admin** (login lewat `api/auth.php`, sesi berbasis cookie). Buat akun admin dengan `php database/buat_admin.php "Nama" email@contoh.com Password`.
+- Keterbatasan: batas percobaan login dihitung per sesi (bukan per IP) dan belum memakai HTTPS.
