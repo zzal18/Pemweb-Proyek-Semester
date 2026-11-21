@@ -139,6 +139,24 @@ $r = request('POST', $base, json($valid));
 cek('C1', 'POST valid -> 201 + data baru', $r['status'] === 201 && ($r['json']['data']['nama'] ?? '') === 'Uji CRUD Latte', "status {$r['status']}");
 $id = (int) ($r['json']['data']['id'] ?? 0);
 
+// ---------- KASIR: izin terbatas (hanya stok) ----------
+if ($kasirEmail !== '' && $kasirPass !== '') {
+    $cookieAdmin = $cookie;   // simpan sesi admin
+    $cookie = '';
+    request('POST', "{$auth}?aksi=login", json(['email' => $kasirEmail, 'password' => $kasirPass]));
+
+    $r = request('PATCH', "{$base}?id={$id}", json(['stok' => 5]));
+    cek('K5', 'PATCH stok oleh kasir -> 200', $r['status'] === 200 && ($r['json']['data']['stok'] ?? -1) === 5, "status {$r['status']}");
+
+    $r = request('PATCH', "{$base}?id={$id}", json(['harga' => 1]));
+    cek('K6', 'PATCH harga oleh kasir -> 403', $r['status'] === 403, "status {$r['status']}");
+
+    $r = request('PUT', "{$base}?id={$id}", json($valid));
+    cek('K7', 'PUT oleh kasir -> 403', $r['status'] === 403, "status {$r['status']}");
+
+    $cookie = $cookieAdmin;   // kembali ke sesi admin
+}
+
 $r = request('POST', $base, json(['nama' => '', 'kategori' => 'Minuman', 'harga' => 1, 'stok' => 1]));
 cek('C2', 'POST nama kosong -> 422 + errors.nama', $r['status'] === 422 && isset($r['json']['errors']['nama']), "status {$r['status']}");
 
