@@ -24,12 +24,30 @@ Error (selalu sama untuk semua status):
 
 ## Hak akses
 
-| Operasi | Siapa yang boleh |
-|---|---|
-| GET menu (daftar, detail, search, filter, pagination) | Publik (tanpa login) |
-| POST, PUT, PATCH, DELETE menu | **Hanya admin** (login dengan role `admin`) |
+### Role / Authorization Matrix
 
-Belum login -> `401`. Login tetapi bukan admin (mis. `kasir`) -> `403`. Pengecekan dilakukan di server pada setiap request tulis, dan role dibaca ulang dari database. Menyembunyikan tombol di UI hanya untuk kenyamanan, bukan pengaman.
+| Aksi | Anonim | Kasir | Admin |
+|---|---|---|---|
+| GET menu (daftar, detail, cari, filter) | 200 | 200 | 200 |
+| POST menu | 401 | 403 | 201 |
+| PUT menu | 401 | 403 | 200 |
+| PATCH menu, hanya field `stok` | 401 | 200 | 200 |
+| PATCH menu, field lain | 401 | 403 | 200 |
+| DELETE menu | 401 | 403 | 204 |
+
+401 berarti belum login (identitas tidak diketahui). 403 berarti sudah login tetapi role tidak diizinkan.
+Pemeriksaan dilakukan di server lewat `Auth::requireRole()`, dan role dibaca ulang dari database pada setiap request.
+Menyembunyikan tombol di UI hanya untuk kenyamanan, bukan pengaman.
+
+### Justifikasi desain akses
+
+Aplikasi ini adalah sistem internal UMKM (A2 Coffee and Food), bukan layanan dengan pendaftar publik.
+Karena itu tidak ada fitur register: akun admin dan kasir dibuat oleh pemilik lewat
+`php database/buat_admin.php`. Register publik akan memungkinkan orang asing membuat akun
+dan memperbesar permukaan serangan.
+
+Dua level akses dipakai karena admin (pemilik) mengelola seluruh data menu, sedangkan kasir hanya
+perlu memperbarui stok dalam pekerjaan harian. Pembagian ini menerapkan prinsip least privilege.
 
 ## Endpoint menu
 
@@ -39,7 +57,7 @@ Belum login -> `401`. Login tetapi bukan admin (mis. `kasir`) -> `403`. Pengecek
 | GET | `menu.php?id={id}` | Publik | Detail satu menu | Query `id` (integer >= 1) | 200 | 400 id tidak valid, 404 tidak ditemukan |
 | POST | `menu.php` | Admin | Tambah menu | JSON: `nama`, `kategori`, `harga`, `stok`, `deskripsi` (opsional) | 201 + header `Location` | 401, 403, 400 JSON rusak/kosong, 415 Content-Type bukan JSON, 422 validasi gagal |
 | PUT | `menu.php?id={id}` | Admin | Ganti semua field menu | Query `id`; JSON lengkap seperti POST | 200 | 401, 403, 400, 404, 415, 422 |
-| PATCH | `menu.php?id={id}` | Admin | Ubah sebagian field | Query `id`; JSON berisi field yang diubah | 200 | 401, 403, 400, 404, 415, 422 |
+| PATCH | `menu.php?id={id}` | Admin; kasir hanya field `stok` | Ubah sebagian field | Query `id`; JSON berisi field yang diubah | 200 | 401, 403, 400, 404, 415, 422 |
 | DELETE | `menu.php?id={id}` | Admin | Hapus menu | Query `id` | 204 (tanpa body) | 401, 403, 400 id tidak valid, 404 tidak ditemukan, 409 menu dipakai di pesanan |
 | GET | `health.php` | Publik | Cek status API | - | 200 | 405 |
 
@@ -143,10 +161,10 @@ Respons `204 No Content` (tanpa body).
 { "status": "error", "message": "Anda harus login terlebih dahulu." }
 ```
 
-`403` bukan admin:
+`403` role tidak diizinkan:
 
 ```json
-{ "status": "error", "message": "Akses ditolak. Hanya admin yang boleh mengelola menu." }
+{ "status": "error", "message": "Akses ditolak. Role Anda tidak diizinkan untuk aksi ini." }
 ```
 
 `404` tidak ditemukan:
@@ -171,6 +189,6 @@ Respons `204 No Content` (tanpa body).
 
 - Semua query memakai prepared statement (`PDO::ATTR_EMULATE_PREPARES = false`), termasuk `LIMIT`/`OFFSET` yang di-bind sebagai integer.
 - Operasi PUT/PATCH berjalan dalam transaksi (`beginTransaction` -> `commit`, `rollBack` bila error) dengan `SELECT ... FOR UPDATE`.
-- Hak akses ditegakkan di server (`Auth::requireAdmin()`), bukan hanya di UI.
+- Hak akses ditegakkan di server (`Auth::requireRole()`), bukan hanya di UI.
 - Permintaan tulis wajib `Content-Type: application/json` (atau `DELETE`), yang tidak dapat dikirim lintas situs oleh form biasa; ditambah cookie `SameSite=Lax`, sehingga risiko CSRF rendah untuk skala proyek ini.
 - Batas login gagal dihitung per sesi, jadi hanya menghambat penebak awam. Untuk produksi, tambahkan pembatasan per IP dan HTTPS.
