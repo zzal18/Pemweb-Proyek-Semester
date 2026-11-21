@@ -14,7 +14,6 @@ const PER_HALAMAN_BAWAAN = 10;
 const PER_HALAMAN_MAKS   = 50;
 const HALAMAN_MAKS       = 1000000;
 
-/** Ambil dan validasi ?id= (wajib, bilangan bulat positif) -> 400 jika salah. */
 function idWajib(): int
 {
     if (!isset($_GET['id'])) {
@@ -27,7 +26,6 @@ function idWajib(): int
     return $id;
 }
 
-/** Ambil query integer opsional dalam rentang 1..$maks -> 400 jika salah. */
 function queryInt(string $nama, int $bawaan, int $maks): int
 {
     if (!isset($_GET[$nama])) {
@@ -42,12 +40,15 @@ function queryInt(string $nama, int $bawaan, int $maks): int
 
 $method = Http::allowMethods('GET', 'POST', 'PUT', 'PATCH', 'DELETE');
 
-// Membaca menu bersifat publik; menambah/mengubah/menghapus hanya untuk admin (401 / 403).
+// Otorisasi: GET publik; tulis butuh login (401) dan role admin/kasir (403).
+$user = null;
 if ($method !== 'GET') {
-    Auth::requireAdmin();
+    $user = Auth::requireRole(['admin', 'kasir']);
+    if ($user['role'] === 'kasir' && $method !== 'PATCH') {
+        Http::error(403, 'Kasir hanya boleh memperbarui stok.');
+    }
 }
 
-// ---------- READ ----------
 if ($method === 'GET') {
     if (isset($_GET['id'])) {
         $id   = idWajib();
@@ -70,7 +71,6 @@ if ($method === 'GET') {
 
     $kunci = isset($_GET['q']) && is_string($_GET['q']) ? $_GET['q'] : null;
 
-    // Pagination aktif jika ?page= atau ?per_page= dikirim; selain itu semua data dikembalikan.
     if (isset($_GET['page']) || isset($_GET['per_page'])) {
         $page    = queryInt('page', 1, HALAMAN_MAKS);
         $perPage = queryInt('per_page', PER_HALAMAN_BAWAAN, PER_HALAMAN_MAKS);
@@ -90,13 +90,12 @@ if ($method === 'GET') {
     Http::success($items, meta: ['total' => count($items)]);
 }
 
-// ---------- CREATE ----------
 if ($method === 'POST') {
-    Http::requireJsonContentType();      // 415
-    $payload = Http::readJsonObject();   // 400
+    Http::requireJsonContentType();
+    $payload = Http::readJsonObject();
 
     $hasil = MenuValidator::validate($payload, Env::int('MAX_NAMA_MENU', 100));
-    if ($hasil['errors'] !== []) {       // 422
+    if ($hasil['errors'] !== []) {
         Http::error(422, 'Data tidak memenuhi aturan validasi.', $hasil['errors']);
     }
 
@@ -106,34 +105,35 @@ if ($method === 'POST') {
     Http::success($baru, 201, 'Menu berhasil disimpan.', ['Location' => 'menu.php?id=' . $id]);
 }
 
-// ---------- DELETE ----------
 if ($method === 'DELETE') {
     $id = idWajib();
 
     try {
         $terhapus = MenuRepository::delete($id);
     } catch (PDOException $e) {
-        // SQLSTATE 23000 = pelanggaran foreign key (menu sudah dipakai di detail_pesanan)
         if ($e->getCode() === '23000') {
             Http::error(409, 'Menu tidak dapat dihapus karena sudah dipakai pada pesanan.');
         }
-        throw $e;                        // selain itu -> 500 generik via exception handler
+        throw $e;
     }
 
     if (!$terhapus) {
         Http::error(404, "Menu dengan id {$id} tidak ditemukan.");
     }
-    Http::noContent();                   // 204
+    Http::noContent();
 }
 
-// ---------- UPDATE (PUT = ganti semua field, PATCH = ubah sebagian) ----------
+// PUT / PATCH
 $id = idWajib();
-Http::requireJsonContentType();          // 415
-$payload = Http::readJsonObject();       // 400
-$maxNama = Env::int('MAX_NAMA_MENU', 100);
+Http::requireJsonContentType();
+$payload = Http::readJsonObject();
 
-// Baca-gabung-tulis dibungkus transaksi dan baris dikunci (FOR UPDATE)
-// agar dua request PATCH bersamaan tidak saling menimpa.
+// Kasir hanya boleh mengirim field "stok" saja.
+if ($user['role'] === 'kasir' && array_keys($payload) !== ['stok']) {
+    Http::error(403, 'Kasir hanya boleh mengubah field stok.');
+}
+
+$maxNama = Env::int('MAX_NAMA_MENU', 100);
 $hasil = Database::transaction(static function () use ($method, $id, $payload, $maxNama): array {
     $saatIni = MenuRepository::find($id, true);
     if ($saatIni === null) {

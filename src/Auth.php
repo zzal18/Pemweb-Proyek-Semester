@@ -36,9 +36,7 @@ final class Auth
         if ($dir === '' || $dir === '.' || $dir === '/') {
             return '/';
         }
-        // setcookie() menolak spasi/karakter kontrol di path (PHP 8.x melempar ValueError),
-        // jadi encode tiap segmen: "Pemweb-Proyek Semester" -> "Pemweb-Proyek%20Semester".
-        // Browser mencocokkan path cookie dengan path request yang sudah ter-encode.
+        // Encode tiap segmen agar spasi di nama folder tidak membuat setcookie() error.
         $segments = array_map('rawurlencode', explode('/', $dir));
         return implode('/', $segments);
     }
@@ -69,17 +67,30 @@ final class Auth
         return $row;
     }
 
-    /** Guard endpoint admin: 401 jika belum login, 403 jika bukan admin. */
-    public static function requireAdmin(): array
+    /** Guard: 401 jika belum login. Mengembalikan data user. */
+    public static function requireLogin(): array
     {
         $user = self::currentUser();
         if ($user === null) {
             Http::error(401, 'Anda harus login terlebih dahulu.');
         }
-        if ($user['role'] !== 'admin') {
-            Http::error(403, 'Akses ditolak. Hanya admin yang boleh mengelola menu.');
+        return $user;
+    }
+
+    /** Guard: 401 jika belum login, 403 jika role tidak termasuk $roles. */
+    public static function requireRole(array $roles): array
+    {
+        $user = self::requireLogin();
+        if (!in_array($user['role'], $roles, true)) {
+            Http::error(403, 'Akses ditolak. Role Anda tidak diizinkan untuk aksi ini.');
         }
         return $user;
+    }
+
+    /** Tetap disediakan agar kode lama tidak rusak. */
+    public static function requireAdmin(): array
+    {
+        return self::requireRole(['admin']);
     }
 
     /** Sisa detik login dikunci (0 = tidak terkunci). Session harus sudah dimulai. */
