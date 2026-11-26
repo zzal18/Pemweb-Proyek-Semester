@@ -49,3 +49,13 @@ CREATE TABLE IF NOT EXISTS detail_pesanan (
     CONSTRAINT fk_detail_menu    FOREIGN KEY (menu_id)    REFERENCES menu(id),
     UNIQUE KEY uq_detail_pesanan_menu (pesanan_id, menu_id)
 ) ENGINE=InnoDB;
+
+-- Modul 13: pembatas percobaan login (per IP + email). Untuk database lama jalankan migrasi_keamanan.sql.
+CREATE TABLE IF NOT EXISTS login_attempts (
+    id         BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    ip         VARCHAR(45) NOT NULL,
+    email_hash CHAR(64)    NOT NULL,
+    created_at TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_attempt_ip_email (ip, email_hash, created_at),
+    INDEX idx_attempt_ip (ip, created_at)
+) ENGINE=InnoDB;

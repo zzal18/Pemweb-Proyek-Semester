@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/bootstrap.php';
 
+use App\AuditLog;
 use App\Auth;
 use App\Database;
 use App\Env;
@@ -45,8 +46,10 @@ $user = null;
 if ($method !== 'GET') {
     $user = Auth::requireRole(['admin', 'kasir']);
     if ($user['role'] === 'kasir' && $method !== 'PATCH') {
+        AuditLog::catat('akses_ditolak', ['status' => 403, 'user_id' => $user['id'], 'role' => 'kasir', 'method' => $method]);
         Http::error(403, 'Kasir hanya boleh memperbarui stok.');
     }
+    Auth::requireCsrf();   // Modul 13: request yang mengubah data wajib membawa header X-CSRF-Token
 }
 
 if ($method === 'GET') {
@@ -101,6 +104,7 @@ if ($method === 'POST') {
 
     $id   = MenuRepository::create($hasil['data']);
     $baru = MenuRepository::find($id);
+    AuditLog::catat('menu_dibuat', ['user_id' => $user['id'], 'menu_id' => $id]);
 
     Http::success($baru, 201, 'Menu berhasil disimpan.', ['Location' => 'menu.php?id=' . $id]);
 }
@@ -120,6 +124,7 @@ if ($method === 'DELETE') {
     if (!$terhapus) {
         Http::error(404, "Menu dengan id {$id} tidak ditemukan.");
     }
+    AuditLog::catat('menu_dihapus', ['user_id' => $user['id'], 'menu_id' => $id]);
     Http::noContent();
 }
 
@@ -130,6 +135,7 @@ $payload = Http::readJsonObject();
 
 // Kasir hanya boleh mengirim field "stok" saja.
 if ($user['role'] === 'kasir' && array_keys($payload) !== ['stok']) {
+    AuditLog::catat('akses_ditolak', ['status' => 403, 'user_id' => $user['id'], 'role' => 'kasir', 'method' => $method, 'alasan' => 'field_selain_stok']);
     Http::error(403, 'Kasir hanya boleh mengubah field stok.');
 }
 
@@ -159,4 +165,5 @@ if ($hasil['status'] === 404) {
 if ($hasil['status'] === 422) {
     Http::error(422, 'Data tidak memenuhi aturan validasi.', $hasil['errors']);
 }
+AuditLog::catat('menu_diubah', ['user_id' => $user['id'], 'menu_id' => $id, 'method' => $method, 'field' => array_keys($payload)]);
 Http::success($hasil['item'], 200, 'Menu berhasil diperbarui.');

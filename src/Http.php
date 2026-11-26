@@ -8,6 +8,7 @@ use JsonException;
 final class Http
 {
     private const JSON_FLAGS = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR;
+    private const MAX_BODY = 65536;   // 64 KB: cukup untuk payload menu, mencegah body raksasa
 
     public static function json(int $status, array $body, array $headers = []): never
     {
@@ -72,11 +73,20 @@ final class Http
         }
     }
 
-    // JSON rusak atau bukan object -> 400
+    // JSON rusak atau bukan object -> 400; body lebih dari 64 KB -> 413
     public static function readJsonObject(): array
     {
+        if ((int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > self::MAX_BODY) {
+            self::error(413, 'Body request terlalu besar (maksimal 64 KB).');
+        }
+        // Baca maksimal MAX_BODY + 1 byte: body chunked tanpa Content-Length pun tetap terbatas.
+        $mentah = file_get_contents('php://input', false, null, 0, self::MAX_BODY + 1) ?: '';
+        if (strlen($mentah) > self::MAX_BODY) {
+            self::error(413, 'Body request terlalu besar (maksimal 64 KB).');
+        }
+
         try {
-            $payload = json_decode(file_get_contents('php://input') ?: '', true, 512, JSON_THROW_ON_ERROR);
+            $payload = json_decode($mentah, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException) {
             self::error(400, 'Format JSON tidak valid.');
         }

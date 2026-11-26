@@ -10,7 +10,7 @@ const ENDPOINT_AUTH = 'api/auth.php';
 const PER_HALAMAN = 10;
 const FIELD_MENU = ['nama', 'kategori', 'harga', 'stok', 'deskripsi'];
 
-const sesi = { user: null };
+const sesi = { user: null, csrf: null };   // csrf: token anti-CSRF dari server, hanya disimpan di memori (bukan localStorage)
 const isAdmin = () => sesi.user?.role === 'admin';
 const state = { kategori: 'Semua', kataKunci: '', page: 1 };
 
@@ -66,9 +66,10 @@ terapkanTema(ambilPreferensi('a2-theme', 'light') === 'dark' ? 'dark' : 'light')
 
 // ===== SESI LOGIN =====
 // Belum login -> form login; admin -> panel kelola; login non-admin -> hanya tombol Keluar.
-function terapkanSesi(user) {
+function terapkanSesi(user, csrf = null) {
     const sebelumnyaAdmin = isAdmin();
     sesi.user = user;
+    sesi.csrf = user === null ? null : csrf;
 
     formLogin.hidden = user !== null;
     barSesi.hidden = user === null;
@@ -93,7 +94,7 @@ function terapkanSesi(user) {
 async function muatSesi() {
     try {
         const hasil = await panggilApi(`${ENDPOINT_AUTH}?aksi=me`);
-        terapkanSesi(hasil.data?.user ?? null);
+        terapkanSesi(hasil.data?.user ?? null, hasil.data?.csrf_token ?? null);
     } catch (error) {
         console.error(error);
         terapkanSesi(null);
@@ -130,7 +131,8 @@ formLogin.addEventListener('submit', async (event) => {
         const hasil = await panggilApi(`${ENDPOINT_AUTH}?aksi=login`, { method: 'POST', body });
         formLogin.reset();
         setStatus(statusSesi, '');
-        terapkanSesi(hasil.data);
+        const { csrf_token: csrf, ...user } = hasil.data;
+        terapkanSesi(user, csrf ?? null);
     } catch (error) {
         if (!(error instanceof ApiError)) console.error(error);
         formLogin.elements.password.value = '';
@@ -146,7 +148,7 @@ formLogin.addEventListener('submit', async (event) => {
 
 tombolLogout.addEventListener('click', async () => {
     try {
-        await panggilApi(`${ENDPOINT_AUTH}?aksi=logout`, { method: 'POST' });
+        await panggilApi(`${ENDPOINT_AUTH}?aksi=logout`, { method: 'POST', csrf: sesi.csrf });
         setStatus(statusMenu, '');
         setStatus(statusAksi, '');
         terapkanSesi(null);
@@ -356,7 +358,7 @@ formMenu.addEventListener('submit', async (event) => {
 
     try {
         const url = mengedit ? `${ENDPOINT_MENU}?id=${encodeURIComponent(idDiedit)}` : ENDPOINT_MENU;
-        const hasil = await panggilApi(url, { method: mengedit ? 'PUT' : 'POST', body });
+        const hasil = await panggilApi(url, { method: mengedit ? 'PUT' : 'POST', body, csrf: sesi.csrf });
 
         resetFormMenu();
         setStatus(statusMenu, hasil.message, 'status-ok');
@@ -386,7 +388,7 @@ async function hapusMenu(item) {
 
     setStatus(statusAksi, 'Menghapus menu...', 'status-loading');
     try {
-        await panggilApi(`${ENDPOINT_MENU}?id=${encodeURIComponent(item.id)}`, { method: 'DELETE' });
+        await panggilApi(`${ENDPOINT_MENU}?id=${encodeURIComponent(item.id)}`, { method: 'DELETE', csrf: sesi.csrf });
         if (idDiedit === item.id) resetFormMenu();
         setStatus(statusAksi, `Menu "${item.nama}" berhasil dihapus.`, 'status-ok');
         await muatMenu();

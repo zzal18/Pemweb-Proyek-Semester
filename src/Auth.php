@@ -6,10 +6,14 @@ namespace App;
 final class Auth
 {
     public const COOKIE = 'a2sid';
-    private const MAX_GAGAL = 5;      // percobaan login gagal berturut-turut
-    private const KUNCI_DETIK = 60;   // lama login dikunci setelah MAX_GAGAL
+
+    // Pembatasan login (Modul 13): dihitung di DATABASE per IP, bukan per session.
+    private const JENDELA_DETIK = 900;   // 15 menit
+    private const MAX_GAGAL_AKUN = 5;    // gagal per kombinasi IP + email
+    private const MAX_GAGAL_IP = 30;     // gagal per IP untuk semua email
 
     private static ?string $dummyHash = null;
+    private static ?string $csrf = null;
 
     /** Mulai session dengan cookie yang aman (HttpOnly, SameSite=Lax, dibatasi ke folder aplikasi). */
     public static function mulai(): void
@@ -29,30 +33,34 @@ final class Auth
         session_start();
     }
 
-    /** /pemweb-obe/api/auth.php -> cookie hanya dikirim ke /pemweb-obe/... */
     private static function cookiePath(): string
     {
         $dir = dirname(dirname(str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '/api/x.php')));
         if ($dir === '' || $dir === '.' || $dir === '/') {
             return '/';
         }
-        // Encode tiap segmen agar spasi di nama folder tidak membuat setcookie() error.
         $segments = array_map('rawurlencode', explode('/', $dir));
         return implode('/', $segments);
     }
 
-    /**
-     * User yang sedang login, atau null. Data selalu dibaca ulang dari database
-     * sehingga user yang dihapus / diturunkan rolenya langsung kehilangan akses.
-     */
+    /** Alamat IP klien. Hanya REMOTE_ADDR: X-Forwarded-For bisa dipalsukan klien. */
+    public static function ip(): string
+    {
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+        return filter_var($ip, FILTER_VALIDATE_IP) !== false ? $ip : '0.0.0.0';
+    }
+
+    /** User yang sedang login, atau null. Data dibaca ulang dari database. */
     public static function currentUser(): ?array
     {
+        self::$csrf = null;
         if (!isset($_COOKIE[self::COOKIE])) {
-            return null;   // pengunjung anonim tidak dibuatkan session
+            return null;
         }
         self::mulai();
-        $id = $_SESSION['user_id'] ?? null;
-        session_write_close();   // lepas kunci file session agar request paralel tidak antre
+        $id   = $_SESSION['user_id'] ?? null;
+        $csrf = $_SESSION['csrf'] ?? null;
+        session_write_close();
         if (!is_int($id)) {
             return null;
         }
@@ -64,52 +72,113 @@ final class Auth
             return null;
         }
         $row['id'] = (int) $row['id'];
+        self::$csrf = is_string($csrf) && $csrf !== '' ? $csrf : null;
         return $row;
     }
 
-    /** Guard: 401 jika belum login. Mengembalikan data user. */
+    public static function csrfToken(): ?string
+    {
+        return self::$csrf;
+    }
+
+    /** Guard CSRF: header X-CSRF-Token harus sama dengan token session. Panggil SETELAH requireLogin/requireRole. */
+    public static function requireCsrf(): void
+    {
+        $dikirim = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+        if (!is_string($dikirim) || self::$csrf === null || !hash_equals(self::$csrf, $dikirim)) {
+            AuditLog::catat('csrf_ditolak', [
+                'method' => $_SERVER['REQUEST_METHOD'] ?? '',
+                'path'   => $_SERVER['SCRIPT_NAME'] ?? '',
+                'token'  => $dikirim === '' ? 'tidak_ada' : 'tidak_cocok',
+            ]);
+            Http::error(403, 'Token CSRF tidak valid. Muat ulang halaman atau login kembali.');
+        }
+    }
+
     public static function requireLogin(): array
     {
         $user = self::currentUser();
         if ($user === null) {
+            AuditLog::catat('akses_ditolak', [
+                'status' => 401,
+                'method' => $_SERVER['REQUEST_METHOD'] ?? '',
+                'path'   => $_SERVER['SCRIPT_NAME'] ?? '',
+            ]);
             Http::error(401, 'Anda harus login terlebih dahulu.');
         }
         return $user;
     }
 
-    /** Guard: 401 jika belum login, 403 jika role tidak termasuk $roles. */
     public static function requireRole(array $roles): array
     {
         $user = self::requireLogin();
         if (!in_array($user['role'], $roles, true)) {
+            AuditLog::catat('akses_ditolak', [
+                'status'  => 403,
+                'user_id' => $user['id'],
+                'role'    => $user['role'],
+                'method'  => $_SERVER['REQUEST_METHOD'] ?? '',
+                'path'    => $_SERVER['SCRIPT_NAME'] ?? '',
+            ]);
             Http::error(403, 'Akses ditolak. Role Anda tidak diizinkan untuk aksi ini.');
         }
         return $user;
     }
 
-    /** Tetap disediakan agar kode lama tidak rusak. */
     public static function requireAdmin(): array
     {
         return self::requireRole(['admin']);
     }
 
-    /** Sisa detik login dikunci (0 = tidak terkunci). Session harus sudah dimulai. */
-    public static function sisaKunci(): int
+    // ---------- Pembatasan percobaan login (berbasis database) ----------
+
+    private static function hashEmail(string $email): string
     {
-        return max(0, (int) ($_SESSION['kunci_sampai'] ?? 0) - time());
+        return hash('sha256', mb_strtolower(trim($email)));
     }
 
-    public static function catatGagal(): void
+    /** Sisa detik login dikunci untuk IP + email ini (0 = tidak terkunci). */
+    public static function sisaKunci(string $email): int
     {
-        $n = (int) ($_SESSION['gagal'] ?? 0) + 1;
-        if ($n >= self::MAX_GAGAL) {
-            $_SESSION['kunci_sampai'] = time() + self::KUNCI_DETIK;
-            $n = 0;
+        $pdo     = Database::connection();
+        $jendela = self::JENDELA_DETIK;   // konstanta integer, bukan input pengguna
+        $sisaSql = "GREATEST(0, {$jendela} - (UNIX_TIMESTAMP() - MIN(UNIX_TIMESTAMP(created_at))))";
+        $syarat  = "created_at > (NOW() - INTERVAL {$jendela} SECOND)";
+
+        $sisa = 0;
+
+        $stmt = $pdo->prepare("SELECT COUNT(*) AS n, {$sisaSql} AS sisa FROM login_attempts WHERE ip = :ip AND email_hash = :hash AND {$syarat}");
+        $stmt->execute(['ip' => self::ip(), 'hash' => self::hashEmail($email)]);
+        $a = $stmt->fetch();
+        if ((int) ($a['n'] ?? 0) >= self::MAX_GAGAL_AKUN) {
+            $sisa = max($sisa, (int) $a['sisa'], 1);
         }
-        $_SESSION['gagal'] = $n;
+
+        $stmt = $pdo->prepare("SELECT COUNT(*) AS n, {$sisaSql} AS sisa FROM login_attempts WHERE ip = :ip AND {$syarat}");
+        $stmt->execute(['ip' => self::ip()]);
+        $b = $stmt->fetch();
+        if ((int) ($b['n'] ?? 0) >= self::MAX_GAGAL_IP) {
+            $sisa = max($sisa, (int) $b['sisa'], 1);
+        }
+
+        return $sisa;
     }
 
-    /** Verifikasi kredensial. Return data user publik, atau null jika salah. Session harus sudah dimulai. */
+    public static function catatGagal(string $email): void
+    {
+        $pdo = Database::connection();
+        $pdo->prepare('INSERT INTO login_attempts (ip, email_hash) VALUES (:ip, :hash)')
+            ->execute(['ip' => self::ip(), 'hash' => self::hashEmail($email)]);
+        $pdo->exec('DELETE FROM login_attempts WHERE created_at < (NOW() - INTERVAL 1 DAY)');
+    }
+
+    public static function hapusGagal(string $email): void
+    {
+        Database::connection()
+            ->prepare('DELETE FROM login_attempts WHERE ip = :ip AND email_hash = :hash')
+            ->execute(['ip' => self::ip(), 'hash' => self::hashEmail($email)]);
+    }
+
     public static function login(string $email, string $password): ?array
     {
         $stmt = Database::connection()->prepare(
@@ -118,15 +187,15 @@ final class Auth
         $stmt->execute(['email' => $email]);
         $row = $stmt->fetch();
 
-        // Selalu jalankan password_verify agar waktu respons sama baik email ada maupun tidak
         self::$dummyHash ??= password_hash('tidak-dipakai', PASSWORD_DEFAULT);
         $cocok = password_verify($password, $row['password_hash'] ?? self::$dummyHash);
         if ($row === false || !$cocok) {
             return null;
         }
 
-        session_regenerate_id(true);   // cegah session fixation
-        $_SESSION = ['user_id' => (int) $row['id']];
+        session_regenerate_id(true);
+        self::$csrf = bin2hex(random_bytes(32));
+        $_SESSION = ['user_id' => (int) $row['id'], 'csrf' => self::$csrf];
 
         return ['id' => (int) $row['id'], 'nama' => $row['nama'], 'email' => $row['email'], 'role' => $row['role']];
     }
@@ -147,7 +216,6 @@ final class Auth
             session_destroy();
         } catch (\ErrorException) {
             // Di sebagian server (mis. Windows) file session belum bisa dihapus saat itu juga.
-            // Data sudah dikosongkan dan cookie dihapus; sisa file dibersihkan garbage collector PHP.
         }
     }
 }

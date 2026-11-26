@@ -30,11 +30,15 @@ if ($adminEmail === '' || $adminPass === '') {
 }
 
 $cookie = '';   // cookie sesi, meniru browser
+$csrf   = '';   // token CSRF dari login (Modul 13); dikirim sebagai header X-CSRF-Token pada request tulis
 
 function request(string $method, string $url, ?string $body = null, string $contentType = 'application/json'): array
 {
-    global $cookie;
+    global $cookie, $csrf;
     $headers = "Accept: application/json\r\n";
+    if ($csrf !== '' && !in_array($method, ['GET', 'HEAD'], true)) {
+        $headers .= "X-CSRF-Token: {$csrf}\r\n";
+    }
     if ($cookie !== '') {
         $headers .= "Cookie: {$cookie}\r\n";
     }
@@ -73,6 +77,7 @@ $valid = ['nama' => 'Uji CRUD Latte', 'kategori' => 'Minuman', 'harga' => 15000,
 
 // ---------- AKSES (tanpa login) ----------
 $cookie = '';
+$csrf = '';
 $r = request('GET', $base);
 cek('A1', 'GET menu tanpa login tetap publik -> 200', $r['status'] === 200, "status {$r['status']}");
 
@@ -111,7 +116,9 @@ $kasirEmail = getenv('KASIR_EMAIL') ?: '';
 $kasirPass  = getenv('KASIR_PASSWORD') ?: '';
 if ($kasirEmail !== '' && $kasirPass !== '') {
     $cookie = '';
+    $csrf = '';
     $r = request('POST', "{$auth}?aksi=login", json(['email' => $kasirEmail, 'password' => $kasirPass]));
+    $csrf = (string) ($r['json']['data']['csrf_token'] ?? '');
     cek('K1', 'Login kasir -> 200', $r['status'] === 200 && ($r['json']['data']['role'] ?? '') === 'kasir', "status {$r['status']}");
     $r = request('POST', $base, json(['nama' => '']));
     cek('K2', 'POST oleh kasir -> 403', $r['status'] === 403, "status {$r['status']}");
@@ -125,7 +132,9 @@ if ($kasirEmail !== '' && $kasirPass !== '') {
 
 // ---------- LOGIN ADMIN ----------
 $cookie = '';
+$csrf = '';
 $r = request('POST', "{$auth}?aksi=login", json(['email' => $adminEmail, 'password' => $adminPass]));
+$csrf = (string) ($r['json']['data']['csrf_token'] ?? '');
 cek('A12', 'Login admin benar -> 200, role admin', $r['status'] === 200 && ($r['json']['data']['role'] ?? '') === 'admin' && !isset($r['json']['data']['password_hash']), "status {$r['status']}");
 if ($r['status'] !== 200) {
     fwrite(STDERR, "Login admin gagal; uji CRUD dihentikan. Cek ADMIN_EMAIL/ADMIN_PASSWORD dan jalankan database/buat_admin.php.\n");
@@ -142,8 +151,11 @@ $id = (int) ($r['json']['data']['id'] ?? 0);
 // ---------- KASIR: izin terbatas (hanya stok) ----------
 if ($kasirEmail !== '' && $kasirPass !== '') {
     $cookieAdmin = $cookie;   // simpan sesi admin
+    $csrfAdmin = $csrf;
     $cookie = '';
-    request('POST', "{$auth}?aksi=login", json(['email' => $kasirEmail, 'password' => $kasirPass]));
+    $csrf = '';
+    $rk = request('POST', "{$auth}?aksi=login", json(['email' => $kasirEmail, 'password' => $kasirPass]));
+    $csrf = (string) ($rk['json']['data']['csrf_token'] ?? '');
 
     $r = request('PATCH', "{$base}?id={$id}", json(['stok' => 5]));
     cek('K5', 'PATCH stok oleh kasir -> 200', $r['status'] === 200 && ($r['json']['data']['stok'] ?? -1) === 5, "status {$r['status']}");
@@ -155,6 +167,7 @@ if ($kasirEmail !== '' && $kasirPass !== '') {
     cek('K7', 'PUT oleh kasir -> 403', $r['status'] === 403, "status {$r['status']}");
 
     $cookie = $cookieAdmin;   // kembali ke sesi admin
+    $csrf = $csrfAdmin;
 }
 
 $r = request('POST', $base, json(['nama' => '', 'kategori' => 'Minuman', 'harga' => 1, 'stok' => 1]));
@@ -283,5 +296,5 @@ cek('A16', 'me setelah logout -> login=false', ($r['json']['data']['login'] ?? t
 // ---------- RINGKASAN ----------
 $gagal = count(array_filter($hasil, fn($h) => !$h[2]));
 printf("\nTotal %d uji, %d lulus, %d gagal.\n", count($hasil), count($hasil) - $gagal, $gagal);
-printf("Catatan: uji 409 (hapus menu yang dipakai pesanan) dan uji 500 generik dilakukan manual, lihat docs/test-matrix.md.\n");
-exit($gagal === 0 ? 0 : 1); 
+printf("Catatan: uji 409 (hapus menu yang dipakai pesanan) dan uji 500 generik dilakukan manual, lihat Test_matrix.md; uji keamanan Modul 13 ada di tests/security_retest.php.\n");
+exit($gagal === 0 ? 0 : 1);

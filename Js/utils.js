@@ -105,8 +105,12 @@ export class ApiError extends Error {
     }
 }
 
-export async function panggilApi(url, { method = 'GET', body } = {}) {
-    const options = { method, headers: { Accept: 'application/json' } };
+// csrf: token dari server (login / aksi=me); wajib untuk request yang mengubah data (Modul 13).
+export async function panggilApi(url, { method = 'GET', body, csrf } = {}) {
+    const options = { method, credentials: 'same-origin', headers: { Accept: 'application/json' } };
+    if (csrf) {
+        options.headers['X-CSRF-Token'] = csrf;
+    }
     if (body !== undefined) {
         options.headers['Content-Type'] = 'application/json';
         options.body = JSON.stringify(body);

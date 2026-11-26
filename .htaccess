@@ -1,0 +1,25 @@
+# Pengamanan Apache - Modul 13 (OWASP A02 Security Misconfiguration)
+Options -Indexes
+
+# Blokir folder internal (dibalas 404)
+RedirectMatch 404 "(?i)/(\.git|vendor|src|database|tests|storage|docs)(/|$)"
+
+# Blokir berkas sensitif berdasarkan nama
+<FilesMatch "(^\.|\.(md|sql|lock|log|bak|old|dist|orig|swp)$|^composer\.json$|^(valid|rusak)\.json$)">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Header keamanan
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "geolocation=(), camera=(), microphone=(), payment=()"
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://api.open-meteo.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+</IfModule>

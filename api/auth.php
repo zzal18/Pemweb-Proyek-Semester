@@ -4,16 +4,20 @@ declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 
 use App\Auth;
+use App\AuditLog;
 use App\Http;
 
 $aksi = isset($_GET['aksi']) && is_string($_GET['aksi']) ? $_GET['aksi'] : '';
 
 switch ($aksi) {
-    // Status sesi. Selalu 200 agar halaman publik tidak memunculkan error 401 di console.
     case 'me':
         Http::allowMethods('GET');
         $user = Auth::currentUser();
-        Http::success(['login' => $user !== null, 'user' => $user]);
+        Http::success([
+            'login'      => $user !== null,
+            'user'       => $user,
+            'csrf_token' => $user !== null ? Auth::csrfToken() : null,
+        ]);
 
     case 'login':
         Http::allowMethods('POST');
@@ -35,22 +39,32 @@ switch ($aksi) {
         }
 
         Auth::mulai();
-        $sisa = Auth::sisaKunci();
+        $ref  = AuditLog::ref($email);
+        $sisa = Auth::sisaKunci($email);
         if ($sisa > 0) {
+            AuditLog::catat('login_terkunci', ['email_ref' => $ref, 'sisa_detik' => $sisa]);
             Http::error(429, "Terlalu banyak percobaan login. Coba lagi dalam {$sisa} detik.", headers: ['Retry-After' => (string) $sisa]);
         }
 
         $user = Auth::login($email, $password);
         if ($user === null) {
-            Auth::catatGagal();
-            usleep(300000);   // perlambat tebak-tebakan password
-            Http::error(401, 'Email atau password salah.');   // pesan sama untuk email salah / password salah
+            Auth::catatGagal($email);
+            AuditLog::catat('login_gagal', ['email_ref' => $ref]);
+            usleep(300000);
+            Http::error(401, 'Email atau password salah.');
         }
-        Http::success($user, 200, 'Login berhasil.');
+        Auth::hapusGagal($email);
+        AuditLog::catat('login_sukses', ['user_id' => $user['id'], 'role' => $user['role']]);
+        Http::success($user + ['csrf_token' => Auth::csrfToken()], 200, 'Login berhasil.');
 
     case 'logout':
         Http::allowMethods('POST');
-        Auth::logout();
+        $user = Auth::currentUser();
+        if ($user !== null) {
+            Auth::requireCsrf();
+            AuditLog::catat('logout', ['user_id' => $user['id']]);
+            Auth::logout();
+        }
         Http::success(null, 200, 'Anda sudah keluar.');
 
     default:
