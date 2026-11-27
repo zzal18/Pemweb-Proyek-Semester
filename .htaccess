@@ -1,8 +1,9 @@
 # Pengamanan Apache - Modul 13 (OWASP A02 Security Misconfiguration)
+# Ditambah Modul 14: HTTPS, HSTS, kompresi, dan cache statis
 Options -Indexes
 
 # Blokir folder internal (dibalas 404)
-RedirectMatch 404 "(?i)/(\.git|vendor|src|database|tests|storage|docs)(/|$)"
+RedirectMatch 404 "(?i)/(\.git|\.github|vendor|src|database|tests|storage|docs)(/|$)"
 
 # Blokir berkas sensitif berdasarkan nama
 <FilesMatch "(^\.|\.(md|sql|lock|log|bak|old|dist|orig|swp)$|^composer\.json$|^(valid|rusak)\.json$)">
@@ -15,6 +16,16 @@ RedirectMatch 404 "(?i)/(\.git|vendor|src|database|tests|storage|docs)(/|$)"
     </IfModule>
 </FilesMatch>
 
+# Paksa HTTPS di staging/production. localhost (Laragon) dikecualikan agar development tetap lewat HTTP.
+# X-Forwarded-Proto dicek supaya tidak terjadi redirect loop di belakang proxy/CDN.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTPS} off
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https
+    RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)(:\d+)?$ [NC]
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
 # Header keamanan
 <IfModule mod_headers.c>
     Header always set X-Content-Type-Options "nosniff"
@@ -22,4 +33,22 @@ RedirectMatch 404 "(?i)/(\.git|vendor|src|database|tests|storage|docs)(/|$)"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
     Header always set Permissions-Policy "geolocation=(), camera=(), microphone=(), payment=()"
     Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://api.open-meteo.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    # HSTS hanya dikirim lewat HTTPS (browser mengabaikannya di HTTP)
+    Header always set Strict-Transport-Security "max-age=31536000" "expr=%{HTTPS} == 'on'"
+</IfModule>
+
+# Performa: kompresi teks (Lighthouse "Enable text compression")
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css application/javascript text/javascript application/json image/svg+xml
+</IfModule>
+
+# Performa: cache aset statis (Lighthouse "Serve static assets with an efficient cache policy").
+# Respons API tidak terpengaruh karena PHP sudah mengirim Cache-Control: no-store.
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType text/css "access plus 1 day"
+    ExpiresByType application/javascript "access plus 1 day"
+    ExpiresByType text/javascript "access plus 1 day"
 </IfModule>

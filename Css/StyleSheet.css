@@ -88,8 +88,8 @@ section h2 {
     grid-template-columns: 1.2fr 1fr;
     align-items: center;
     gap: 40px;
-    padding-left: calc((100% - var(--container-width)) / 2 + 5%);
-    padding-right: calc((100% - var(--container-width)) / 2 + 5%);
+    padding-left: max(5%, calc((100% - var(--container-width)) / 2 + 5%));
+    padding-right: max(5%, calc((100% - var(--container-width)) / 2 + 5%));
 }
 
 #beranda h2 {
@@ -166,7 +166,7 @@ article p {
     align-items: center;
     justify-content: center;
     background-color: var(--secondary-color);
-    color: var(--accent-color);
+    color: var(--primary-color);   /* Modul 14: kontras 2,18:1 -> 6,47:1 (tema terang) */
     font-size: 4rem;
     font-weight: bold;
 }
@@ -186,8 +186,8 @@ article p {
 #tentang {
     background-color: var(--secondary-color);
     max-width: 100%;
-    padding-left: calc((100% - var(--container-width)) / 2 + 5%);
-    padding-right: calc((100% - var(--container-width)) / 2 + 5%);
+    padding-left: max(5%, calc((100% - var(--container-width)) / 2 + 5%));
+    padding-right: max(5%, calc((100% - var(--container-width)) / 2 + 5%));
 }
 
 #tentang p {
@@ -249,6 +249,7 @@ button[type="submit"]:hover {
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
+select:focus-visible,
 textarea:focus-visible {
     outline: 3px solid var(--accent-color);
     outline-offset: 3px;
@@ -721,4 +722,46 @@ form[hidden],
 
 #paginasi-admin[hidden] {
     display: none;
+}
+
+/* ===== MODUL 14: perbaikan hasil audit aksesibilitas/performa ===== */
+
+/* Skip link: pengguna keyboard/screen reader bisa melompati header (WCAG 2.4.1 Bypass Blocks) */
+.skip-link {
+    position: absolute;
+    left: 16px;
+    top: -100px;
+    z-index: 200;
+    background-color: var(--primary-color);
+    color: var(--white);
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.skip-link:focus {
+    top: 12px;
+}
+
+main:focus {
+    outline: none;
+}
+
+/* Hormati preferensi "kurangi gerakan" dari sistem operasi (WCAG 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        transition: none !important;
+        animation: none !important;
+    }
+
+    article:hover {
+        transform: none;
+    }
 }
